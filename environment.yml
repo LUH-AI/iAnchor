@@ -1,0 +1,5 @@
+name: IML-Anchors
+dependencies:
+  - python=3.9
+  - numpy
+  - pytorch
