@@ -1,5 +1,11 @@
 name: IML-Anchors
+channels:
+  - pytorch
+  - defaults
+  - conda-forge
 dependencies:
   - python=3.9
   - numpy
   - pytorch
+  - pytest
+  - black
