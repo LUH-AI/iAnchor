@@ -3,6 +3,7 @@ from enum import Enum, auto
 from typing import Callable, Protocol
 
 import torch
+from skimage.segmentation import quickshift
 
 
 class Tasktype(Enum):
@@ -85,12 +86,12 @@ class Anchor:
     https://homes.cs.washington.edu/~marcotcr/aaai18.pdf
     """
 
-    datatype: Tasktype
+    tasktype: Tasktype
     sampler: Sampler = field(init=False)
     verbose: bool = False
 
     def __post_init__(self):
-        self.sampler = Sampler.create(self.datatype)
+        self.sampler = Sampler.create(self.tasktype)
 
     def explain_instance(self, input: any, predict_fn: Callable[[any], torch.Tensor]):
         exp = self.__greedy_anchor(self.sampler.sample)

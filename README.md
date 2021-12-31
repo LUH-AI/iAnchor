@@ -1,9 +1,4 @@
-## iML-ws21-projects
-
-Please refer to the StudIP slides `iML_lecture_projects.pdf`.
-
-## Template Repository for iML-Project Submissions
-
+# Anchors on Steroids (AoS)
 ### Requirements for Project Subissions
 * use python 3.9. As in the assignments, we recommend working inside a conda environment.
   ```
