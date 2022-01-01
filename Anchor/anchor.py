@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 from enum import Enum, auto
-from typing import Callable, Protocol
+from typing import Callable, Optional, Protocol, Tuple, Union
 
 import torch
 from skimage.segmentation import quickshift
@@ -34,7 +34,7 @@ class Sampler:
         cls.subclasses[cls.type] = cls
 
     @classmethod
-    def create(cls, typ: Tasktype):
+    def create(cls, type: Tasktype):
         """
         Creates subclass depending on typ.
 
@@ -43,14 +43,14 @@ class Sampler:
         Returns:
             Subclass that is used for the given Tasktype.
         """
-        if typ not in cls.subclasses:
-            raise ValueError("Bad message type {}".format(typ))
+        if type not in cls.subclasses:
+            raise ValueError("Bad message type {}".format(type))
 
-        return cls.subclasses[typ]()
+        return cls.subclasses[type]()
 
 
 class TabularSampler(Sampler):
-    typ: Tasktype = Tasktype.TABULAR
+    type: Tasktype = Tasktype.TABULAR
 
     def sample(
         self, input: any, predict_fn: Callable[[any], torch.Tensor]
@@ -59,16 +59,30 @@ class TabularSampler(Sampler):
 
 
 class ImageSampler(Sampler):
-    typ: Tasktype = Tasktype.IMAGE
+    type: Tasktype = Tasktype.IMAGE
 
     def sample(
         self, input: any, predict_fn: Callable[[any], torch.Tensor]
-    ) -> torch.Tensor:
-        ...
+    ) -> Tuple[torch.Tensor, torch.Tensor]:
+        label = torch.argmax(predict_fn(input.permute(2, 0, 1).unsqueeze(0))[0])
+        # run segmentation on the image
+        segments = torch.from_numpy(
+            quickshift(input.double(), kernel_size=4, max_dist=200, ratio=0.2)
+        )  # parameters not from original implementation
+        segment_features = torch.unique(segments)
+        n_features = len(segment_features)
+
+        # create superpixel image by replacing superpixels by its mean in the original image
+        sp_image = torch.clone(input)
+        for spixel in segment_features:
+            sp_image[segments == spixel, :] = torch.mean(
+                sp_image[segments == spixel, :], axis=0
+            )
+        return segments, None
 
 
 class TextSampler(Sampler):
-    typ: Tasktype = Tasktype.TEXT
+    type: Tasktype = Tasktype.TEXT
 
     def sample(
         self, input: any, predict_fn: Callable[[any], torch.Tensor]
