@@ -18,13 +18,16 @@ Test funtions for the image sampler and anchor explainations on images
 def setup():
     model = resnet18(pretrained=True)
     pytest.predict_fn = model
-    pytest.sampler = Sampler().create(Tasktype.IMAGE)
 
 
 def test_image_sampler():
     image = torch.Tensor(img_as_float(astronaut()[::2, ::2]))
-    segments, sample = pytest.sampler.sample(image, pytest.predict_fn)
-    print("found segments: {}".format(len(torch.unique(segments))))
+    sampler = Sampler().create(Tasktype.IMAGE, image, pytest.predict_fn)
+    segments, sample, labels = sampler.sample([], 3)
+
+    assert (
+        len(torch.unique(segments)) == 44
+    )  # dependent on segmentation method and hyperparameters
 
     fig = plt.figure()
     plt.imshow(mark_boundaries(image, segments.numpy()))
