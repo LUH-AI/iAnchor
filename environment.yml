@@ -11,3 +11,5 @@ dependencies:
   - black
   - scikit-image
   - torchvision
+  - pip:
+      - pdoc3
