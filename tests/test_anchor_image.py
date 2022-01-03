@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import pytest
 import torch
 import torchvision.transforms.functional as TF
-from Anchor.anchor import Sampler, Tasktype
+from Anchor.sampler import Sampler, Tasktype
 from PIL import Image
 from skimage.data import astronaut
 from skimage.segmentation import mark_boundaries, quickshift
