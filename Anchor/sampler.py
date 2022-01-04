@@ -39,7 +39,7 @@ class Sampler:
         Creates subclass depending on typ.
 
         Args:
-            typ: Tasktype 
+            typ: Tasktype
         Returns:
             Subclass that is used for the given Tasktype.
         """
@@ -92,17 +92,22 @@ class ImageSampler(Sampler):
         self.predict_fn = predict_fn
 
     def sample(
-        self, keep_features: torch.Tensor, num_samples: int
+        self, permute_features: torch.Tensor, num_samples: int
     ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         """
         Sample function for image data.
         Generates random image samples from the distribution around the original image.
-        Features can be blocked from replacement with the present attribute.
+
+        Args:
+            permute_features: torch.Tensor
+            num_samples: int
+        Returns:
+            segments, feature_mask, labels: [torch.Tensor, torch.Tensor, torch.Tensor]
         """
         data = torch.randint(
             0, 2, (num_samples, self.n_features)
         )  # generate random feature mask for each sample
-        data[:, keep_features] = 1  # set present features to one
+        data[:, permute_features] = 1  # set present features to one
         samples = torch.stack([self.__generate_image(mask) for mask in data])
         preds = self.predict_fn(samples.permute(0, 3, 1, 2))
         preds_max = torch.argmax(preds, axis=1)
@@ -114,7 +119,12 @@ class ImageSampler(Sampler):
         """
         Generate sample image given some feature mask.
         The true image will get permutated dependent on the feature mask.
-        Pixel which are outmasked by the mask are replaced by the correspodning superpixel pixel.
+        Pixel which are outmasked by the mask are replaced by the corresponding superpixel pixel.
+
+        Args:
+            feature_mask: torch.Tensor
+        Returns:
+            permutated image: torch.Tensor
         """
         img = self.image.clone()
         zeros = torch.where(feature_mask == 0)[0]

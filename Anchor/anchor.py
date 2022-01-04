@@ -5,6 +5,8 @@ from typing import Callable, Optional, Protocol, Tuple, Union
 import torch
 from skimage.segmentation import quickshift
 
+from sampler import Sampler, Tasktype
+
 
 @dataclass(frozen=True)
 class Anchor:
