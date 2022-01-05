@@ -1,4 +1,6 @@
 # Anchors on Steroids (AoS)
+## Architecture Concept Mockup
+![](static/concept.png)
 ### Requirements for Project Subissions
 * use python 3.9. As in the assignments, we recommend working inside a conda environment.
   ```

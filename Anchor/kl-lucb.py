@@ -2,9 +2,9 @@ from dataclasses import dataclass, field
 from typing import Callable, Tuple
 
 import numpy as np
-import torch
 
 from candidate import AnchorCandidate
+from sampler import Sampler
 
 
 @dataclass(frozen=True)
@@ -24,30 +24,81 @@ class KL_LUCB:
 
     # TODO: fix type annotations and implement this shit
     def get_best_candidates(
-        self, candidates: list[AnchorCandidate], sampler, top_n: int = 1,
+        self, candidates: list[AnchorCandidate], sampler: Sampler, top_n: int = 1,
     ):
         """
         Find top-n anchor candidates with highest expected precision.
+
+        Args:
+            candidates: list[AnchorCandidate]
+            sampler: Sampler
+            top_n: int
+        Returns:
+            best_candidate_idxs: np.array
         """
+
+        assert len(candidates) > 0
+
         t = 1
-        prec_ub = torch.zeros(len(candidates))
-        prec_lb = torch.zeros(len(candidates))
+        prec_ub = np.zeros(len(candidates))
+        prec_lb = np.zeros(len(candidates))
 
         lt, ut = self.__update_bounds(candidates, prec_lb, prec_ub, t)
 
-        while (prec_ub - prec_lb) > self.delta:
-            pass
+        while (prec_ub - prec_lb) > self.eps:
+            candidates[ut] = sampler.sample(candidates[ut], self.batch_size)
+            candidates[lt] = sampler.sample(candidates[lt], self.batch_size)
 
-        # @TODO Decide what should be returned. Could be the top n indices or the means of all candidates.
+            t += 1
+            lt, ut = self.__update_bounds(candidates, prec_lb, prec_ub, t)
+
+        best_candidates_idxs = np.argmax[[c.precision for c in candidates]][-top_n:]
+
+        return best_candidates_idxs
 
     def __update_bounds(
-        candidates: list[AnchorCandidate], lb: list[float], ub: list[float], t: int
-    ) -> Tuple[list[float], list[float]]:
+        self,
+        candidates: list[AnchorCandidate],
+        lb: list[float],
+        ub: list[float],
+        t: int,
+        top_n: int,
+    ) -> Tuple[int, int]:
         """
-        Updates current bounds
+        Update current bounds for each candidate
+
+        Args:
+            candidates: list[AnchorCandidate]
+            lb: list[float]
+            ub: list[float]
+            t: int
+            top_n: int
+        Returns:
+            lt: int
+            ut: int
         """
+
         means = [c.precision for c in candidates]  # mean precision per candidate
-        # @TODO Implement
+        sorted_means = np.argsort(means)
+        beta = KL_LUCB.compute_beta(len(candidates), t, self.delta)
+        j, nj = (
+            sorted_means[-top_n:],
+            sorted_means[:-top_n],
+        )  # divide list into the top_n best candidates and the rest
+
+        for f in j:
+            lb[f] = KL_LUCB.dlow_bernoulli(means[f], beta / candidates[f].n_samples)
+        for f in nj:
+            ub[f] = KL_LUCB.dup_bernoulli(means[f], beta / candidates[f].n_samples)
+
+        ut = nj[
+            np.argmax(ub[nj])
+        ]  # candidate where upper bound of candidate is maximal
+        lt = j[
+            np.argmin(lb[j])
+        ]  # # candidate where lower bound of candidate is minimal
+
+        return lt, ut
 
     # Following part is completely based on the original implementation, since there is not much one could optimize or change
 
