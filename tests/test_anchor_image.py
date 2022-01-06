@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import pytest
 import torch
 import torchvision.transforms.functional as TF
+from Anchor.candidate import AnchorCandidate
 from Anchor.sampler import Sampler, Tasktype
 from PIL import Image
 from skimage.data import astronaut
@@ -23,7 +24,8 @@ def setup():
 def test_image_sampler():
     image = torch.Tensor(img_as_float(astronaut()[::2, ::2]))
     sampler = Sampler().create(Tasktype.IMAGE, image, pytest.predict_fn)
-    segments, sample, labels = sampler.sample([], 3)
+    candidate = AnchorCandidate([])
+    candidate, segments = sampler.sample(candidate, 3)
 
     assert (
         len(torch.unique(segments)) == 44

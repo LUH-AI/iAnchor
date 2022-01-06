@@ -5,6 +5,8 @@ from typing import Callable, Optional, Protocol, Tuple, Union
 import torch
 from skimage.segmentation import quickshift
 
+from .candidate import AnchorCandidate
+
 
 class Tasktype(Enum):
     """
@@ -92,8 +94,8 @@ class ImageSampler(Sampler):
         self.predict_fn = predict_fn
 
     def sample(
-        self, permute_features: torch.Tensor, num_samples: int
-    ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+        self, candidate: AnchorCandidate, num_samples: int
+    ) -> AnchorCandidate:  # Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         """
         Sample function for image data.
         Generates random image samples from the distribution around the original image.
@@ -102,18 +104,22 @@ class ImageSampler(Sampler):
             permute_features: torch.Tensor
             num_samples: int
         Returns:
-            segments, feature_mask, labels: [torch.Tensor, torch.Tensor, torch.Tensor]
+            candidate: AnchorCandidate
         """
         data = torch.randint(
             0, 2, (num_samples, self.n_features)
         )  # generate random feature mask for each sample
-        data[:, permute_features] = 1  # set present features to one
+        data[:, candidate.feature_mask] = 1  # set present features to one
         samples = torch.stack([self.__generate_image(mask) for mask in data])
         preds = self.predict_fn(samples.permute(0, 3, 1, 2))
         preds_max = torch.argmax(preds, axis=1)
         labels = (preds_max == self.label).int()
 
-        return self.segments, data, labels
+        # update candidate
+        candidate.update(labels.sum(), num_samples)
+
+        return candidate, self.segments  # for test
+        # return self.segments, data, labels
 
     def __generate_image(self, feature_mask: torch.Tensor) -> torch.Tensor:
         """
