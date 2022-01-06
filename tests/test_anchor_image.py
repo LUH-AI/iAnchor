@@ -24,9 +24,11 @@ def setup():
 def test_image_sampler():
     image = torch.Tensor(img_as_float(astronaut()[::2, ::2]))
     sampler = Sampler().create(Tasktype.IMAGE, image, pytest.predict_fn)
-    candidate = AnchorCandidate([])
+    candidate = AnchorCandidate(torch.arange(sampler.n_features))
     candidate, segments = sampler.sample(candidate, 3)
 
+    assert candidate.n_samples == 3
+    assert candidate.precision == 1
     assert (
         len(torch.unique(segments)) == 44
     )  # dependent on segmentation method and hyperparameters

@@ -77,6 +77,7 @@ class ImageSampler(Sampler):
         assert input.shape[2] == 3
 
         self.label = torch.argmax(predict_fn(input.permute(2, 0, 1).unsqueeze(0))[0])
+
         # run segmentation on the image
         self.segments = torch.from_numpy(
             quickshift(input.double(), kernel_size=4, max_dist=200, ratio=0.2)
@@ -114,6 +115,7 @@ class ImageSampler(Sampler):
         preds = self.predict_fn(samples.permute(0, 3, 1, 2))
         preds_max = torch.argmax(preds, axis=1)
         labels = (preds_max == self.label).int()
+        print(self.label, preds_max)
 
         # update candidate
         candidate.update(labels.sum(), num_samples)

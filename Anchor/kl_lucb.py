@@ -3,9 +3,8 @@ from typing import Callable, Tuple
 
 import numpy as np
 
-from sampler import Sampler
-
 from .candidate import AnchorCandidate
+from .sampler import Sampler
 
 
 @dataclass(frozen=True)
@@ -18,10 +17,11 @@ class KL_LUCB:
     http://proceedings.mlr.press/v30/Kaufmann13.pdf
     """
 
-    eps: float = field()
-    delta: float = field()
-    batch_size: int = field()
-    verbose: bool = field()
+    # default values from original paper
+    eps: float = 0.1
+    delta: float = 0.05
+    batch_size: int = 10
+    verbose: bool = False
 
     # TODO: fix type annotations and implement this shit
     def get_best_candidates(
@@ -115,25 +115,27 @@ class KL_LUCB:
     def dup_bernoulli(precision: float, level: float):
         lm = precision
         um = min(min(1, precision + np.sqrt(level / 2.0)), 1)
-        qm = (um + lm) / 2.0
 
-        if KL_LUCB.kl_bernoulli(precision, qm) > level:
-            um = qm
-        # dont know why this should make sense at all?
-        # else:
-        #     lm = qm
+        for _ in range(25):  # this should somehow converge?
+            qm = (um + lm) / 2.0
+            if KL_LUCB.kl_bernoulli(precision, qm) > level:
+                um = qm
+            # dont know why this should make sense at all?
+            else:
+                lm = qm
         return um
 
     @staticmethod
     def dlow_bernoulli(precision: float, level: float):
         um = precision
         lm = max(min(1, precision - np.sqrt(level / 2.0)), 0)
-        qm = (um + lm) / 2.0
 
-        if KL_LUCB.kl_bernoulli(precision, qm) > level:
-            lm = qm
-        # else:
-        #     um = qm
+        for _ in range(25):  # this should somehow converge?
+            qm = (um + lm) / 2.0
+            if KL_LUCB.kl_bernoulli(precision, qm) > level:
+                lm = qm
+            else:
+                um = qm
         return lm
 
     @staticmethod
