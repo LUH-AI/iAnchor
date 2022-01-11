@@ -83,7 +83,7 @@ class ImageSampler(Sampler):
             quickshift(input.double(), kernel_size=4, max_dist=200, ratio=0.2)
         )  # parameters from original implementation
         segment_features = torch.unique(self.segments)
-        self.n_features = len(segment_features)
+        self._n_features = len(segment_features)
 
         # create superpixel image by replacing superpixels by its mean in the original image
         self.sp_image = torch.clone(input)
@@ -118,9 +118,9 @@ class ImageSampler(Sampler):
         print(self.label, preds_max)
 
         # update candidate
-        candidate.update(labels.sum(), num_samples)
+        candidate.update_precision(labels.sum(), num_samples)
 
-        return candidate, self.segments  # for test
+        return candidate, data, self.segments  # for test
         # return self.segments, data, labels
 
     def __generate_image(self, feature_mask: torch.Tensor) -> torch.Tensor:
@@ -142,6 +142,10 @@ class ImageSampler(Sampler):
         img[mask] = self.sp_image[mask]
 
         return img
+
+    @property
+    def num_features(self):
+        return self._n_features
 
 
 class TextSampler(Sampler):

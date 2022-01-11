@@ -25,7 +25,7 @@ def test_image_sampler():
     image = torch.Tensor(img_as_float(astronaut()[::2, ::2]))
     sampler = Sampler().create(Tasktype.IMAGE, image, pytest.predict_fn)
     candidate = AnchorCandidate(torch.arange(sampler.n_features))
-    candidate, segments = sampler.sample(candidate, 3)
+    candidate, data, segments = sampler.sample(candidate, 3)
 
     assert candidate.n_samples == 3
     assert candidate.precision == 1

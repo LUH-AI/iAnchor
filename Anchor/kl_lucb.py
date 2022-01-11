@@ -47,8 +47,8 @@ class KL_LUCB:
         lt, ut = self.__update_bounds(candidates, prec_lb, prec_ub, t)
 
         while (prec_ub - prec_lb) > self.eps:
-            candidates[ut], _ = sampler.sample(candidates[ut], self.batch_size)
-            candidates[lt], _ = sampler.sample(candidates[lt], self.batch_size)
+            candidates[ut], _, _ = sampler.sample(candidates[ut], self.batch_size)
+            candidates[lt], _, _ = sampler.sample(candidates[lt], self.batch_size)
 
             t += 1
             lt, ut = self.__update_bounds(candidates, prec_lb, prec_ub, t)
