@@ -1,5 +1,5 @@
 import pytest
-from Anchor.kl_lucb import KL_LUCB
+from Anchor.bandit import KL_LUCB
 
 
 def test_best_candidate():

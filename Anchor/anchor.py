@@ -6,9 +6,9 @@ import numpy as np
 import torch
 from skimage.segmentation import quickshift
 
+from Anchor.bandit import KL_LUCB
 from Anchor.candidate import AnchorCandidate
-from kl_lucb import KL_LUCB
-from sampler import Sampler, Tasktype
+from Anchor.sampler import Sampler, Tasktype
 
 
 @dataclass(frozen=True)
