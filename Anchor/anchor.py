@@ -7,6 +7,7 @@ import torch
 from skimage.segmentation import quickshift
 
 from Anchor.candidate import AnchorCandidate
+from kl_lucb import KL_LUCB
 from sampler import Sampler, Tasktype
 
 
@@ -29,13 +30,20 @@ class Anchor:
         self,
         input: any,
         predict_fn: Callable[[any], torch.Tensor],
+        method: str,
         num_coverage_samples: int,
     ):
+        self.kl_lucb = KL_LUCB()
         self.sampler = Sampler.create(self.tasktype, input, predict_fn)
         _, self.coverage_data, _ = self.sampler.sample(
             AnchorCandidate(_feature_mask=[]), num_coverage_samples
         )
-        exp = self.__greedy_anchor(self.sampler.sample)
+        exp = AnchorCandidate([])
+        if method == "greedy":
+            exp = self.__greedy_anchor()
+        # TODO add other methods
+
+        return exp
 
     def generate_candidates(
         self,
@@ -74,12 +82,28 @@ class Anchor:
         return included_samples / self.coverage_data.shape[0]
 
     def __greedy_anchor(
-        sample_fn: Callable,
-        delta: float = 0.05,
+        self,
+        delta: float = 0.1,
         epsilon: float = 0.1,
         batch_size: int = 16,
+        min_coverage: float = 0.5,
+        num_coverage_samples: int = 10000,
     ):
-        ...
+        """
+        Greedy Approach to calculate the shortest anchor, which fullfills the precision constraint EQ3.
+        """
+        candidates = self.generate_candidates([], min_coverage, num_coverage_samples)
+        best_idx = self.kl_lucb.get_best_candidates(candidates, self.sampler, 1)
+        anchor = candidates[best_idx]
+
+        while anchor.precision < 1 - delta:
+            candidates = self.generate_candidates(
+                [anchor], min_coverage, num_coverage_samples
+            )
+            best_idx = self.kl_lucb.get_best_candidates(candidates, self.sampler, 1)
+            anchor = candidates[best_idx]
+
+        return anchor
 
     def beam_anchor():
         ...

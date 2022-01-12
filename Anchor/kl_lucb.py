@@ -45,13 +45,14 @@ class KL_LUCB:
         prec_lb = np.zeros(len(candidates))
 
         lt, ut = self.__update_bounds(candidates, prec_lb, prec_ub, t)
-
-        while (prec_ub - prec_lb) > self.eps:
+        prec_diff = prec_ub[ut] - prec_lb[lt]
+        while prec_diff > self.eps:
             candidates[ut], _, _ = sampler.sample(candidates[ut], self.batch_size)
             candidates[lt], _, _ = sampler.sample(candidates[lt], self.batch_size)
 
             t += 1
             lt, ut = self.__update_bounds(candidates, prec_lb, prec_ub, t)
+            prec_diff = prec_ub[ut] - prec_lb[lt]
 
         best_candidates_idxs = np.argmax[[c.precision for c in candidates]][-top_n:]
 

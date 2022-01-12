@@ -2,6 +2,7 @@ from dataclasses import dataclass, field
 from enum import Enum, auto
 from typing import Callable, Optional, Protocol, Tuple, Union
 
+import numpy as np
 import torch
 from skimage.segmentation import quickshift
 
@@ -108,7 +109,7 @@ class ImageSampler(Sampler):
             candidate: AnchorCandidate
         """
         data = torch.randint(
-            0, 2, (num_samples, self.n_features)
+            0, 2, (num_samples, self._n_features)
         )  # generate random feature mask for each sample
         data[:, candidate.feature_mask] = 1  # set present features to one
         samples = torch.stack([self.__generate_image(mask) for mask in data])
