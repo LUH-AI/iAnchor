@@ -1,3 +1,4 @@
+import logging
 from dataclasses import dataclass, field
 from enum import Enum, auto
 from typing import Callable, Optional, Protocol, Tuple, Union
@@ -59,7 +60,7 @@ class TabularSampler(Sampler):
 
     def sample(
         self, input: any, predict_fn: Callable[[any], torch.Tensor]
-    ) -> torch.Tensor:
+    ) -> Tuple[AnchorCandidate, np.ndarray, np.ndarray]:
         ...
 
 
@@ -73,23 +74,31 @@ class ImageSampler(Sampler):
     """
 
     type: Tasktype = Tasktype.IMAGE
+    device: torch.device = torch.device("cpu")
 
-    def __init__(self, input: any, predict_fn: Callable[[any], torch.Tensor], **kwargs):
+    def __init__(self, input: any, predict_fn: Callable[[any], np.array], **kwargs):
         assert input.shape[2] == 3
+        assert len(input.shape) == 3
 
-        self.label = torch.argmax(predict_fn(input.permute(2, 0, 1).unsqueeze(0))[0])
+        self.label = np.argmax(
+            predict_fn(input.permute(2, 0, 1).unsqueeze(0)).cpu().detach().numpy(),
+            axis=1,
+        )
 
+        input = input.cpu().detach().numpy()
         # run segmentation on the image
-        self.segments = torch.from_numpy(
-            quickshift(input.double(), kernel_size=4, max_dist=200, ratio=0.2)
-        )  # parameters from original implementation
-        segment_features = torch.unique(self.segments)
+        self.segments = quickshift(
+            input.astype(np.double), kernel_size=4, max_dist=200, ratio=0.2
+        )
+
+        # parameters from original implementation
+        segment_features = np.unique(self.segments)
         self._n_features = len(segment_features)
 
         # create superpixel image by replacing superpixels by its mean in the original image
-        self.sp_image = torch.clone(input)
+        self.sp_image = np.copy(input)
         for spixel in segment_features:
-            self.sp_image[self.segments == spixel, :] = torch.mean(
+            self.sp_image[self.segments == spixel, :] = np.mean(
                 self.sp_image[self.segments == spixel, :], axis=0
             )
         self.image = input
@@ -97,47 +106,48 @@ class ImageSampler(Sampler):
 
     def sample(
         self, candidate: AnchorCandidate, num_samples: int
-    ) -> AnchorCandidate:  # Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    ) -> Tuple[AnchorCandidate, np.ndarray, np.ndarray]:
         """
         Sample function for image data.
         Generates random image samples from the distribution around the original image.
 
         Args:
-            permute_features: torch.Tensor
+            candidate: AnchorCandidate
             num_samples: int
         Returns:
             candidate: AnchorCandidate
         """
-        data = torch.randint(
-            0, 2, (num_samples, self._n_features)
+        data = np.random.randint(
+            0, 2, size=(num_samples, self._n_features)
         )  # generate random feature mask for each sample
         data[:, candidate.feature_mask] = 1  # set present features to one
-        samples = torch.stack([self.__generate_image(mask) for mask in data])
-        preds = self.predict_fn(samples.permute(0, 3, 1, 2))
-        preds_max = torch.argmax(preds, axis=1)
-        labels = (preds_max == self.label).int()
-        print(self.label, preds_max)
+        samples = np.stack([self.__generate_image(mask) for mask in data], axis=0)
+        input = torch.Tensor(samples).to(self.device)
+        preds = self.predict_fn(input.permute(0, 3, 1, 2)).cpu().detach().numpy()
+        preds_max = np.argmax(preds, axis=1)
+        labels = (preds_max == self.label).astype(int)
+        # print(self.label, preds_max)
 
         # update candidate
-        candidate.update_precision(labels.sum(), num_samples)
+        candidate.update_precision(np.sum(labels), num_samples)
 
-        return candidate, data, self.segments  # for test
-        # return self.segments, data, labels
+        return candidate, data, self.segments
+        # retur
 
-    def __generate_image(self, feature_mask: torch.Tensor) -> torch.Tensor:
+    def __generate_image(self, feature_mask: np.ndarray) -> np.array:
         """
         Generate sample image given some feature mask.
         The true image will get permutated dependent on the feature mask.
         Pixel which are outmasked by the mask are replaced by the corresponding superpixel pixel.
 
         Args:
-            feature_mask: torch.Tensor
+            feature_mask: np.ndarray
         Returns:
-            permutated image: torch.Tensor
+            permutated image: np.array
         """
-        img = self.image.clone()
-        zeros = torch.where(feature_mask == 0)[0]
-        mask = torch.zeros(self.segments.shape).bool()
+        img = self.image.copy()
+        zeros = np.where(feature_mask == 0)[0]
+        mask = np.zeros(self.segments.shape).astype(bool)
         for z in zeros:
             mask[self.segments == z] = True
         img[mask] = self.sp_image[mask]
@@ -154,5 +164,5 @@ class TextSampler(Sampler):
 
     def sample(
         self, input: any, predict_fn: Callable[[any], torch.Tensor]
-    ) -> torch.Tensor:
+    ) -> Tuple[AnchorCandidate, np.ndarray, np.ndarray]:
         ...

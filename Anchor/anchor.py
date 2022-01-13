@@ -1,3 +1,4 @@
+import logging
 from dataclasses import dataclass, field
 from enum import Enum, auto
 from typing import Callable, Optional, Protocol, Tuple, Union
@@ -11,7 +12,7 @@ from Anchor.candidate import AnchorCandidate
 from Anchor.sampler import Sampler, Tasktype
 
 
-@dataclass(frozen=True)
+@dataclass()
 class Anchor:
     """
     Approach to explain predictions of a blackbox model using anchors.
@@ -26,24 +27,32 @@ class Anchor:
     verbose: bool = False
     coverage_data: np.array = field(init=False)
 
+    def __post_init__(self):
+        logging.basicConfig(format="%(levelname)s:%(message)s", level=logging.DEBUG)
+
     def explain_instance(
         self,
         input: any,
-        predict_fn: Callable[[any], torch.Tensor],
-        method: str,
-        num_coverage_samples: int,
+        predict_fn: Callable[[any], np.array],
+        method: str = "greedy",
+        num_coverage_samples: int = 10000,
     ):
         self.kl_lucb = KL_LUCB()
         self.sampler = Sampler.create(self.tasktype, input, predict_fn)
+        logging.info(" Start Sampling")
         _, self.coverage_data, _ = self.sampler.sample(
             AnchorCandidate(_feature_mask=[]), num_coverage_samples
         )
         exp = AnchorCandidate([])
         if method == "greedy":
+            logging.info(" Start greedy search")
             exp = self.__greedy_anchor()
         # TODO add other methods
 
-        return exp
+        return exp, self.sampler.segments
+
+    def visualize():
+        ...
 
     def generate_candidates(
         self,
@@ -66,7 +75,7 @@ class Anchor:
 
                 # append new feature to candidate
                 anchor.append_feature(feature)
-                coverage = self.__calculate_coverage(anchor, num_coverage_samples)
+                coverage = self.__calculate_coverage(anchor)
                 if coverage > coverage_min:
                     new_candidates.append(anchor)
 
@@ -76,34 +85,35 @@ class Anchor:
         included_samples = 0
         for mask in self.coverage_data:
             # check if mask positive samples are included in the feature_mask of the anchor
-            if np.all(np.isin(np.where(mask == True), anchor.feature_mask), axis=0):
+            if np.all(np.isin(np.argwhere(mask == True), anchor.feature_mask), axis=0):
                 included_samples += 1
 
         return included_samples / self.coverage_data.shape[0]
 
     def __greedy_anchor(
         self,
-        delta: float = 0.1,
+        delta: float = 0.2,
         epsilon: float = 0.1,
         batch_size: int = 16,
-        min_coverage: float = 0.5,
+        min_coverage: float = 0.2,
         num_coverage_samples: int = 10000,
     ):
         """
         Greedy Approach to calculate the shortest anchor, which fullfills the precision constraint EQ3.
         """
         candidates = self.generate_candidates([], min_coverage, num_coverage_samples)
-        best_idx = self.kl_lucb.get_best_candidates(candidates, self.sampler, 1)
-        anchor = candidates[best_idx]
-
+        best = self.kl_lucb.get_best_candidates(candidates, self.sampler, 1)[0]
+        anchor = best
         while anchor.precision < 1 - delta:
+            print(anchor)
             candidates = self.generate_candidates(
                 [anchor], min_coverage, num_coverage_samples
             )
-            best_idx = self.kl_lucb.get_best_candidates(candidates, self.sampler, 1)
-            anchor = candidates[best_idx]
+            print(candidates)
+            anchor = self.kl_lucb.get_best_candidates(candidates, self.sampler, 1)[0]
+            # anchor = candidates[best_idx]
 
         return anchor
 
-    def beam_anchor():
+    def __beam_anchor():
         ...

@@ -1,4 +1,5 @@
 import matplotlib.pyplot as plt
+import numpy as np
 import pytest
 import torch
 import torchvision.transforms.functional as TF
@@ -27,13 +28,15 @@ def test_image_sampler():
     candidate = AnchorCandidate(torch.arange(sampler._n_features))
     candidate, data, segments = sampler.sample(candidate, 3)
 
+    print(image.shape)
+
     assert candidate.n_samples == 3
     assert candidate.precision == 1
     assert (
-        len(torch.unique(segments)) == 44
+        len(np.unique(segments)) == 44
     )  # dependent on segmentation method and hyperparameters
 
     fig = plt.figure()
-    plt.imshow(mark_boundaries(image, segments.numpy()))
+    plt.imshow(mark_boundaries(image, segments))
     plt.show()
 

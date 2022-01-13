@@ -1,3 +1,4 @@
+import logging
 from dataclasses import dataclass, field
 from typing import Callable, Tuple
 
@@ -18,7 +19,7 @@ class KL_LUCB:
     """
 
     # default values from original paper
-    eps: float = 0.1
+    eps: float = 0.8
     delta: float = 0.05
     batch_size: int = 10
     verbose: bool = False
@@ -44,19 +45,25 @@ class KL_LUCB:
         prec_ub = np.zeros(len(candidates))
         prec_lb = np.zeros(len(candidates))
 
-        lt, ut = self.__update_bounds(candidates, prec_lb, prec_ub, t)
+        lt, ut, prec_lb, prec_ub = self.__update_bounds(
+            candidates, prec_lb, prec_ub, t, top_n
+        )
         prec_diff = prec_ub[ut] - prec_lb[lt]
         while prec_diff > self.eps:
             candidates[ut], _, _ = sampler.sample(candidates[ut], self.batch_size)
             candidates[lt], _, _ = sampler.sample(candidates[lt], self.batch_size)
 
             t += 1
-            lt, ut = self.__update_bounds(candidates, prec_lb, prec_ub, t)
+            lt, ut, prec_lb, prec_ub = self.__update_bounds(
+                candidates, prec_lb, prec_ub, t, top_n
+            )
             prec_diff = prec_ub[ut] - prec_lb[lt]
 
-        best_candidates_idxs = np.argmax[[c.precision for c in candidates]][-top_n:]
+        best_candidates_idxs = np.argsort([c.precision for c in candidates])[
+            -top_n:
+        ]  # use partioning
 
-        return best_candidates_idxs
+        return [candidates[idx] for idx in best_candidates_idxs]
 
     def __update_bounds(
         self,
@@ -65,7 +72,7 @@ class KL_LUCB:
         ub: list[float],
         t: int,
         top_n: int,
-    ) -> Tuple[int, int]:
+    ) -> Tuple[int, int, np.ndarray, np.ndarray]:
         """
         Update current bounds for each candidate
 
@@ -100,7 +107,7 @@ class KL_LUCB:
             np.argmin(lb[j])
         ]  # # candidate where lower bound of candidate is minimal
 
-        return lt, ut
+        return lt, ut, lb, ub
 
     # Following part is completely based on the original implementation, since there is not much one could optimize or change
 
