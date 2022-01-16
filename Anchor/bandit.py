@@ -19,7 +19,7 @@ class KL_LUCB:
     """
 
     # default values from original paper
-    eps: float = 0.8
+    eps: float = 0.1
     delta: float = 0.05
     batch_size: int = 10
     verbose: bool = False
@@ -50,6 +50,7 @@ class KL_LUCB:
         )
         prec_diff = prec_ub[ut] - prec_lb[lt]
         while prec_diff > self.eps:
+            logging.info(prec_diff)
             candidates[ut], _, _ = sampler.sample(candidates[ut], self.batch_size)
             candidates[lt], _, _ = sampler.sample(candidates[lt], self.batch_size)
 

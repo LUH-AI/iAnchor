@@ -41,9 +41,9 @@ class Anchor:
         self.sampler = Sampler.create(self.tasktype, input, predict_fn)
         logging.info(" Start Sampling")
         _, self.coverage_data, _ = self.sampler.sample(
-            AnchorCandidate(_feature_mask=[]), num_coverage_samples
+            AnchorCandidate(_feature_mask=[]), num_coverage_samples, False
         )
-        exp = AnchorCandidate([])
+        exp = AnchorCandidate(_feature_mask=[])
         if method == "greedy":
             logging.info(" Start greedy search")
             exp = self.__greedy_anchor()
@@ -55,13 +55,11 @@ class Anchor:
         ...
 
     def generate_candidates(
-        self,
-        prev_anchors: list[AnchorCandidate],
-        coverage_min: float,
-        num_coverage_samples: int,
+        self, prev_anchors: list[AnchorCandidate], coverage_min: float
     ) -> list[AnchorCandidate]:
         new_candidates: list[AnchorCandidate] = []
         # iterate over possible features or predicates
+
         for feature in range(self.sampler.num_features):
             # check if we have no prev anchors and create a complete new set
             if len(prev_anchors) == 0:
@@ -74,45 +72,46 @@ class Anchor:
                     continue
 
                 # append new feature to candidate
-                anchor.append_feature(feature)
-                coverage = self.__calculate_coverage(anchor)
-                if coverage > coverage_min:
-                    new_candidates.append(anchor)
+                tmp = anchor.feature_mask.copy()
+                tmp.append(feature)
+
+                nc = AnchorCandidate(_feature_mask=tmp)
+                nc.coverage = self.__calculate_coverage(nc)
+                if nc.coverage > coverage_min:
+                    new_candidates.append(nc)
 
         return new_candidates
 
     def __calculate_coverage(self, anchor: AnchorCandidate) -> float:
         included_samples = 0
-        for mask in self.coverage_data:
+        for mask in self.coverage_data:  # replace with numpy only
             # check if mask positive samples are included in the feature_mask of the anchor
-            if np.all(np.isin(np.argwhere(mask == True), anchor.feature_mask), axis=0):
+            if np.all(np.isin(anchor.feature_mask, np.where(mask == 1)), axis=0):
                 included_samples += 1
 
         return included_samples / self.coverage_data.shape[0]
 
     def __greedy_anchor(
         self,
-        delta: float = 0.2,
+        desired_confidence: float = 1,
         epsilon: float = 0.1,
         batch_size: int = 16,
         min_coverage: float = 0.2,
-        num_coverage_samples: int = 10000,
     ):
         """
         Greedy Approach to calculate the shortest anchor, which fullfills the precision constraint EQ3.
         """
-        candidates = self.generate_candidates([], min_coverage, num_coverage_samples)
-        best = self.kl_lucb.get_best_candidates(candidates, self.sampler, 1)[0]
-        anchor = best
-        while anchor.precision < 1 - delta:
-            print(anchor)
-            candidates = self.generate_candidates(
-                [anchor], min_coverage, num_coverage_samples
-            )
-            print(candidates)
-            anchor = self.kl_lucb.get_best_candidates(candidates, self.sampler, 1)[0]
-            # anchor = candidates[best_idx]
+        candidates = self.generate_candidates([], min_coverage)
+        logging.info("test")
+        anchor = self.kl_lucb.get_best_candidates(candidates, self.sampler, 1)[0]
+        logging.info("test2")
 
+        while anchor.precision < desired_confidence:
+            candidates = self.generate_candidates([anchor], min_coverage)
+            logging.info(candidates)
+            anchor = self.kl_lucb.get_best_candidates(candidates, self.sampler, 1)[0]
+
+        logging.info(anchor)
         return anchor
 
     def __beam_anchor():

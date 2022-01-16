@@ -10,6 +10,7 @@ dependencies:
   - pytest
   - black
   - scikit-image
-  - torchvision
+  - torchvision 
+  - pip
   - pip:
       - pdoc3

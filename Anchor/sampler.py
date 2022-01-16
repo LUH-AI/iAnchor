@@ -74,7 +74,6 @@ class ImageSampler(Sampler):
     """
 
     type: Tasktype = Tasktype.IMAGE
-    device: torch.device = torch.device("cpu")
 
     def __init__(self, input: any, predict_fn: Callable[[any], np.array], **kwargs):
         assert input.shape[2] == 3
@@ -101,11 +100,15 @@ class ImageSampler(Sampler):
             self.sp_image[self.segments == spixel, :] = np.mean(
                 self.sp_image[self.segments == spixel, :], axis=0
             )
+
         self.image = input
         self.predict_fn = predict_fn
 
     def sample(
-        self, candidate: AnchorCandidate, num_samples: int
+        self,
+        candidate: AnchorCandidate,
+        num_samples: int,
+        calculate_labels: bool = True,
     ) -> Tuple[AnchorCandidate, np.ndarray, np.ndarray]:
         """
         Sample function for image data.
@@ -121,12 +124,16 @@ class ImageSampler(Sampler):
             0, 2, size=(num_samples, self._n_features)
         )  # generate random feature mask for each sample
         data[:, candidate.feature_mask] = 1  # set present features to one
+
+        if not calculate_labels:
+            return None, data, None
+
         samples = np.stack([self.__generate_image(mask) for mask in data], axis=0)
-        input = torch.Tensor(samples).to(self.device)
+        input = torch.Tensor(samples)
+
         preds = self.predict_fn(input.permute(0, 3, 1, 2)).cpu().detach().numpy()
         preds_max = np.argmax(preds, axis=1)
         labels = (preds_max == self.label).astype(int)
-        # print(self.label, preds_max)
 
         # update candidate
         candidate.update_precision(np.sum(labels), num_samples)
