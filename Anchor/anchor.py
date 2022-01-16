@@ -91,6 +91,31 @@ class Anchor:
 
         return included_samples / self.coverage_data.shape[0]
 
+    def check_valid_candidate(
+        self,
+        candidate: AnchorCandidate,
+        beam_size: int = 1,
+        sample_count: int = 10,
+        delta: float = 0.05,
+        dconf: float = 1,
+        eps_stop: float = 0.05,
+    ) -> bool:
+        prec = candidate.precision
+        beta = np.log(1.0 / (delta / (1 + (beam_size - 1) * self.sampler.num_features)))
+
+        lb = KL_LUCB.dlow_bernoulli(prec, beta / candidate.n_samples)
+        ub = KL_LUCB.dup_bernoulli(prec, beta / candidate.n_samples)
+
+        while (prec >= dconf and lb < dconf - eps_stop) or (
+            prec < dconf and ub >= dconf + eps_stop
+        ):
+            nc, _, _ = self.sampler.sample(candidate, sample_count)
+            prec = nc.precision
+            lb = KL_LUCB.dlow_bernoulli(prec, beta / nc.n_samples)
+            ub = KL_LUCB.dup_bernoulli(prec, beta / nc.n_samples)
+
+        return prec >= dconf and lb > dconf - eps_stop
+
     def __greedy_anchor(
         self,
         desired_confidence: float = 1,
