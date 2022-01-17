@@ -105,13 +105,14 @@ class Anchor:
 
         lb = KL_LUCB.dlow_bernoulli(prec, beta / candidate.n_samples)
         ub = KL_LUCB.dup_bernoulli(prec, beta / candidate.n_samples)
-
+        print(lb, ub)
         while (prec >= dconf and lb < dconf - eps_stop) or (
             prec < dconf and ub >= dconf + eps_stop
         ):
             nc, _, _ = self.sampler.sample(candidate, sample_count)
             prec = nc.precision
             lb = KL_LUCB.dlow_bernoulli(prec, beta / nc.n_samples)
+            print(lb)
             ub = KL_LUCB.dup_bernoulli(prec, beta / nc.n_samples)
 
         return prec >= dconf and lb > dconf - eps_stop
@@ -131,7 +132,7 @@ class Anchor:
         anchor = self.kl_lucb.get_best_candidates(candidates, self.sampler, 1)[0]
         logging.info("test2")
 
-        while anchor.precision < desired_confidence:
+        while not self.check_valid_candidate(anchor):
             candidates = self.generate_candidates([anchor], min_coverage)
             logging.info(candidates)
             anchor = self.kl_lucb.get_best_candidates(candidates, self.sampler, 1)[0]
