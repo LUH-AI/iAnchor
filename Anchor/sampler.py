@@ -8,6 +8,7 @@ import torch
 from skimage.segmentation import quickshift
 
 from .candidate import AnchorCandidate
+import matplotlib.pyplot as plt
 
 
 class Tasktype(Enum):

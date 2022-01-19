@@ -45,14 +45,16 @@ class Anchor:
         )
         exp = AnchorCandidate(_feature_mask=[])
         if method == "greedy":
-            logging.info(" Start greedy search")
+            logging.info(" Start Greedy Search")
             exp = self.__greedy_anchor()
-        # TODO add other methods
+        elif method == "beam":
+            logging.info(" Start Beam Search")
+            exp = self.__beam_anchor()
 
         return exp, self.sampler.segments
 
-    def visualize():
-        ...
+    def visualize(self):
+        return self.sampler.image, self.sampler.sp_image  # test
 
     def generate_candidates(
         self, prev_anchors: list[AnchorCandidate], coverage_min: float
@@ -77,7 +79,7 @@ class Anchor:
 
                 nc = AnchorCandidate(_feature_mask=tmp)
                 nc.coverage = self.__calculate_coverage(nc)
-                if nc.coverage > coverage_min:
+                if nc.coverage >= coverage_min:
                     new_candidates.append(nc)
 
         return new_candidates
@@ -128,9 +130,7 @@ class Anchor:
         Greedy Approach to calculate the shortest anchor, which fullfills the precision constraint EQ3.
         """
         candidates = self.generate_candidates([], min_coverage)
-        logging.info("test")
         anchor = self.kl_lucb.get_best_candidates(candidates, self.sampler, 1)[0]
-        logging.info("test2")
 
         while not self.check_valid_candidate(anchor):
             candidates = self.generate_candidates([anchor], min_coverage)
@@ -140,5 +140,39 @@ class Anchor:
         logging.info(anchor)
         return anchor
 
-    def __beam_anchor():
-        ...
+    def __beam_anchor(
+        self,
+        desired_confidence: float = 1,
+        epsilon: float = 0.1,
+        batch_size: int = 16,
+        beam_size=1,
+    ):
+
+        max_anchor_size = self.sampler.num_features
+        current_anchor_size = 1
+        best_of_size = {0: []}  # A0
+        best_candidate = AnchorCandidate([])  # A*
+
+        while current_anchor_size < max_anchor_size:
+            # Generate candidates
+            candidates = self.generate_candidates(
+                best_of_size[current_anchor_size - 1], best_candidate.coverage,
+            )
+            if len(candidates) == 0:
+                break
+            best_candidates = self.kl_lucb.get_best_candidates(
+                candidates, self.sampler, min(beam_size, len(candidates))
+            )
+            best_of_size[current_anchor_size] = best_candidates
+
+            for c in best_candidates:
+                if (
+                    self.check_valid_candidate(c)
+                    and c.coverage > best_candidate.coverage
+                ):
+                    best_candidate = c
+
+            current_anchor_size += 1
+
+        return best_candidate
+
