@@ -33,12 +33,13 @@ class Anchor:
     def explain_instance(
         self,
         input: any,
+        dataset: any,
         predict_fn: Callable[[any], np.array],
         method: str = "greedy",
         num_coverage_samples: int = 10000,
     ):
         self.kl_lucb = KL_LUCB()
-        self.sampler = Sampler.create(self.tasktype, input, predict_fn)
+        self.sampler = Sampler.create(self.tasktype, input, predict_fn, dataset)
         logging.info(" Start Sampling")
         _, self.coverage_data, _ = self.sampler.sample(
             AnchorCandidate(_feature_mask=[]), num_coverage_samples, False
@@ -51,7 +52,9 @@ class Anchor:
             logging.info(" Start Beam Search")
             exp = self.__beam_anchor()
 
-        return exp, self.sampler.segments
+        # TODO Maybe remove segments
+        # return exp, self.sampler.segments
+        return exp, None
 
     def visualize(self):
         return self.sampler.image, self.sampler.sp_image  # test
@@ -98,7 +101,7 @@ class Anchor:
         candidate: AnchorCandidate,
         beam_size: int = 1,
         sample_count: int = 10,
-        delta: float = 0.05,
+        delta: float = 0.1,
         dconf: float = 1,
         eps_stop: float = 0.05,
     ) -> bool:
@@ -107,23 +110,23 @@ class Anchor:
 
         lb = KL_LUCB.dlow_bernoulli(prec, beta / candidate.n_samples)
         ub = KL_LUCB.dup_bernoulli(prec, beta / candidate.n_samples)
-        print(lb, ub)
         while (prec >= dconf and lb < dconf - eps_stop) or (
             prec < dconf and ub >= dconf + eps_stop
         ):
             nc, _, _ = self.sampler.sample(candidate, sample_count)
             prec = nc.precision
             lb = KL_LUCB.dlow_bernoulli(prec, beta / nc.n_samples)
-            print(lb)
+
             ub = KL_LUCB.dup_bernoulli(prec, beta / nc.n_samples)
 
+        print(lb, ub, prec)
         return prec >= dconf and lb > dconf - eps_stop
 
     def __greedy_anchor(
         self,
         desired_confidence: float = 1,
-        epsilon: float = 0.1,
-        batch_size: int = 16,
+        epsilon: float = 0.15,
+        batch_size: int = 100,
         min_coverage: float = 0.2,
     ):
         """
@@ -142,10 +145,10 @@ class Anchor:
 
     def __beam_anchor(
         self,
-        desired_confidence: float = 1,
-        epsilon: float = 0.1,
-        batch_size: int = 16,
-        beam_size=1,
+        desired_confidence: float = 0.95,
+        epsilon: float = 0.15,
+        batch_size: int = 100,
+        beam_size=4,
     ):
 
         max_anchor_size = self.sampler.num_features

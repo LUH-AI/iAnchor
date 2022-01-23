@@ -1,6 +1,9 @@
 # Anchors on Steroids (AoS)
 ## Architecture Concept Mockup
 ![](static/concept.png)
+
+## Todo Polish 
+- Convert completly to numpy so its working with all kinds of ml libs
 ### Requirements for Project Subissions
 * use python 3.9. As in the assignments, we recommend working inside a conda environment.
   ```

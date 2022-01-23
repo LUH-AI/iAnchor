@@ -39,7 +39,9 @@ class Sampler:
         cls.subclasses[cls.type] = cls
 
     @classmethod
-    def create(cls, type: Tasktype, input: any, predict_fn: Callable, **kwargs):
+    def create(
+        cls, type: Tasktype, input: any, predict_fn: Callable, dataset: any, **kwargs
+    ):
         """
         Creates subclass depending on typ.
 
@@ -52,17 +54,62 @@ class Sampler:
             raise ValueError("Bad message type {}".format(type))
 
         return cls.subclasses[type](
-            input, predict_fn, **kwargs
+            input, predict_fn, dataset, **kwargs
         )  # every sampler needs input and predict function
 
 
 class TabularSampler(Sampler):
     type: Tasktype = Tasktype.TABULAR
 
+    def __init__(
+        self, input: any, predict_fn: Callable[[any], np.array], dataset: any, **kwargs
+    ):
+        # if not dataset:
+        #     assert "Dataset must be given for tabular explaination."
+
+        self.predict_fn = predict_fn
+        self.input = input
+        self.label = predict_fn(input)
+        self.dataset = dataset
+        self.num_features = self.dataset.shape[1]
+
     def sample(
-        self, input: any, predict_fn: Callable[[any], torch.Tensor]
+        self,
+        candidate: AnchorCandidate,
+        num_samples: int,
+        calculate_labels: bool = True,
     ) -> Tuple[AnchorCandidate, np.ndarray, np.ndarray]:
         ...
+
+        if self.dataset.shape[0] > num_samples:
+            assert "Batch size must be smaller or equal to dataset rows."
+
+        # pertubate
+        sample_idxs = np.random.choice(
+            self.dataset.shape[0], size=num_samples, replace=False
+        )
+
+        # fixiate feature mask
+        samples = np.copy(self.dataset[sample_idxs])
+        samples[:, candidate.feature_mask] = self.input[0, candidate.feature_mask]
+
+        # calculate converage mask
+        masks = (samples[:, :] != self.input).astype(int)
+
+        if not calculate_labels:
+            return None, masks, None
+
+        # predict samples
+        x = torch.Tensor(samples)
+        preds = self.predict_fn(x)
+        # (16, )
+        # preds_max = np.argmax(preds, axis=1)
+        labels = (preds == self.label).astype(int)
+
+        # update candidate
+        candidate.update_precision(np.sum(labels), num_samples)
+
+        return candidate, masks, None  # TODO remove third return variable
 
 
 class ImageSampler(Sampler):
@@ -76,7 +123,9 @@ class ImageSampler(Sampler):
 
     type: Tasktype = Tasktype.IMAGE
 
-    def __init__(self, input: any, predict_fn: Callable[[any], np.array], **kwargs):
+    def __init__(
+        self, input: any, predict_fn: Callable[[any], np.array], dataset: any, **kwargs
+    ):
         assert input.shape[2] == 3
         assert len(input.shape) == 3
 
@@ -139,8 +188,7 @@ class ImageSampler(Sampler):
         # update candidate
         candidate.update_precision(np.sum(labels), num_samples)
 
-        return candidate, data, self.segments
-        # retur
+        return candidate, data, self.segments  # TODO remove third return variable
 
     def __generate_image(self, feature_mask: np.ndarray) -> np.array:
         """

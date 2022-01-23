@@ -20,8 +20,8 @@ class KL_LUCB:
 
     # default values from original paper
     eps: float = 0.1
-    delta: float = 0.05
-    batch_size: int = 16
+    delta: float = 0.1
+    batch_size: int = 100
     verbose: bool = False
 
     # TODO: fix type annotations and implement this shit
