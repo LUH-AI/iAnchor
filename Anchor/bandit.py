@@ -21,7 +21,7 @@ class KL_LUCB:
     # default values from original paper
     eps: float = 0.1
     delta: float = 0.1
-    batch_size: int = 100
+    batch_size: int = 10
     verbose: bool = False
 
     # TODO: fix type annotations and implement this shit
@@ -90,6 +90,7 @@ class KL_LUCB:
 
         means = [c.precision for c in candidates]  # mean precision per candidate
         sorted_means = np.argsort(means)
+
         beta = KL_LUCB.compute_beta(len(candidates), t, self.delta)
         j, nj = (
             sorted_means[-top_n:],
@@ -101,12 +102,9 @@ class KL_LUCB:
         for f in nj:
             ub[f] = KL_LUCB.dup_bernoulli(means[f], beta / candidates[f].n_samples)
 
-        ut = nj[
-            np.argmax(ub[nj])
-        ]  # candidate where upper bound of candidate is maximal
-        lt = j[
-            np.argmin(lb[j])
-        ]  # # candidate where lower bound of candidate is minimal
+        ut = nj[np.argmax(ub[nj])] if len(nj) != 0 else 0
+        # candidate where upper bound of candidate is maximal
+        lt = j[np.argmin(lb[j])]  # candidate where lower bound of candidate is minimal
 
         return lt, ut, lb, ub
 

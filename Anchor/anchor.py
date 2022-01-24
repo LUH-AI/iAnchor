@@ -145,9 +145,9 @@ class Anchor:
 
     def __beam_anchor(
         self,
-        desired_confidence: float = 0.95,
+        desired_confidence: float = 1,
         epsilon: float = 0.15,
-        batch_size: int = 100,
+        batch_size: int = 16,
         beam_size=4,
     ):
 
