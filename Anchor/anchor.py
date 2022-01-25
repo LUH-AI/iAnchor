@@ -37,8 +37,13 @@ class Anchor:
         predict_fn: Callable[[any], np.array],
         method: str = "greedy",
         num_coverage_samples: int = 10000,
+        desired_confidence: float = 1,
+        epsilon: float = 0.15,
+        batch_size: int = 16,
+        beam_size=4,
+        verbose=False,
     ):
-        self.kl_lucb = KL_LUCB()
+        self.kl_lucb = KL_LUCB(eps=epsilon, batch_size=batch_size, verbose=verbose)
         self.sampler = Sampler.create(self.tasktype, input, predict_fn, dataset)
         logging.info(" Start Sampling")
         _, self.coverage_data, _ = self.sampler.sample(
@@ -50,7 +55,11 @@ class Anchor:
             exp = self.__greedy_anchor()
         elif method == "beam":
             logging.info(" Start Beam Search")
-            exp = self.__beam_anchor()
+            exp = self.__beam_anchor(
+                desired_confidence=desired_confidence,
+                batch_size=batch_size,
+                beam_size=beam_size,
+            )
 
         # TODO Maybe remove segments
         # return exp, self.sampler.segments
@@ -99,10 +108,10 @@ class Anchor:
     def check_valid_candidate(
         self,
         candidate: AnchorCandidate,
-        beam_size: int = 1,
-        sample_count: int = 10,
+        beam_size: int,
+        sample_count: int,
+        dconf: float,
         delta: float = 0.1,
-        dconf: float = 1,
         eps_stop: float = 0.05,
     ) -> bool:
         prec = candidate.precision
@@ -125,7 +134,6 @@ class Anchor:
     def __greedy_anchor(
         self,
         desired_confidence: float = 1,
-        epsilon: float = 0.15,
         batch_size: int = 100,
         min_coverage: float = 0.2,
     ):
@@ -144,11 +152,7 @@ class Anchor:
         return anchor
 
     def __beam_anchor(
-        self,
-        desired_confidence: float = 1,
-        epsilon: float = 0.15,
-        batch_size: int = 16,
-        beam_size=4,
+        self, desired_confidence: float, batch_size: int, beam_size: int,
     ):
 
         max_anchor_size = self.sampler.num_features
@@ -170,7 +174,12 @@ class Anchor:
 
             for c in best_candidates:
                 if (
-                    self.check_valid_candidate(c)
+                    self.check_valid_candidate(
+                        c,
+                        beam_size=beam_size,
+                        sample_count=batch_size,
+                        dconf=desired_confidence,
+                    )
                     and c.coverage > best_candidate.coverage
                 ):
                     best_candidate = c
