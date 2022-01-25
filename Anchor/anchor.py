@@ -4,7 +4,6 @@ from enum import Enum, auto
 from typing import Callable, Optional, Protocol, Tuple, Union
 
 import numpy as np
-import torch
 from skimage.segmentation import quickshift
 
 from Anchor.bandit import KL_LUCB
@@ -60,13 +59,19 @@ class Anchor:
                 batch_size=batch_size,
                 beam_size=beam_size,
             )
+        elif method == "smac":
+            logging.info(" Start SMAC Search")
+            exp = self.__smac_anchor(
+                desired_confidence=desired_confidence,
+                batch_size=batch_size,
+                beam_size=beam_size,
+            )
 
-        # TODO Maybe remove segments
-        # return exp, self.sampler.segments
-        return exp, None
+        return exp
 
     def visualize(self):
-        return self.sampler.image, self.sampler.sp_image  # test
+        # TODO: Adapt to different input types
+        return self.sampler.image, self.sampler.sp_image  #
 
     def generate_candidates(
         self, prev_anchors: list[AnchorCandidate], coverage_min: float
@@ -105,7 +110,7 @@ class Anchor:
 
         return included_samples / self.coverage_data.shape[0]
 
-    def check_valid_candidate(
+    def __check_valid_candidate(
         self,
         candidate: AnchorCandidate,
         beam_size: int,
@@ -143,7 +148,7 @@ class Anchor:
         candidates = self.generate_candidates([], min_coverage)
         anchor = self.kl_lucb.get_best_candidates(candidates, self.sampler, 1)[0]
 
-        while not self.check_valid_candidate(anchor):
+        while not self.__check_valid_candidate(anchor):
             candidates = self.generate_candidates([anchor], min_coverage)
             logging.info(candidates)
             anchor = self.kl_lucb.get_best_candidates(candidates, self.sampler, 1)[0]
@@ -174,7 +179,7 @@ class Anchor:
 
             for c in best_candidates:
                 if (
-                    self.check_valid_candidate(
+                    self.__check_valid_candidate(
                         c,
                         beam_size=beam_size,
                         sample_count=batch_size,
@@ -187,4 +192,9 @@ class Anchor:
             current_anchor_size += 1
 
         return best_candidate
+
+    def __smac_search(
+        self, desired_confidence: float, batch_size: int, beam_size: int,
+    ):
+        raise NotImplementedError()
 

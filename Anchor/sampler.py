@@ -64,8 +64,8 @@ class TabularSampler(Sampler):
     def __init__(
         self, input: any, predict_fn: Callable[[any], np.array], dataset: any, **kwargs
     ):
-        # if not dataset:
-        #     assert "Dataset must be given for tabular explaination."
+        if not dataset:
+            assert "Dataset must be given for tabular explaination."
 
         self.predict_fn = predict_fn
         self.input = input
@@ -100,8 +100,11 @@ class TabularSampler(Sampler):
             return None, masks, None
 
         # predict samples
-        x = torch.Tensor(samples)
-        preds = self.predict_fn(x)
+        preds = self.predict_fn(samples)
+
+        # assert isinstance(
+        #     preds, np.ndarray
+        # ), "Result of your predict function should be of type numpy.ndarray"
         # (16, )
         # preds_max = np.argmax(preds, axis=1)
         labels = (preds == self.label).astype(int)
@@ -129,10 +132,7 @@ class ImageSampler(Sampler):
         assert input.shape[2] == 3
         assert len(input.shape) == 3
 
-        self.label = np.argmax(
-            predict_fn(input.permute(2, 0, 1).unsqueeze(0)).cpu().detach().numpy(),
-            axis=1,
-        )
+        self.label = np.argmax(predict_fn(input[np.newaxis, ...]), axis=1,)
 
         input = input.cpu().detach().numpy()
         # run segmentation on the image
@@ -153,12 +153,55 @@ class ImageSampler(Sampler):
 
         self.image = input
         self.predict_fn = predict_fn
+        self.dataset = dataset
 
     def sample(
         self,
         candidate: AnchorCandidate,
         num_samples: int,
         calculate_labels: bool = True,
+    ):
+        data = np.random.randint(
+            0, 2, size=(num_samples, self._n_features)
+        )  # generate random feature mask for each sample
+        data[:, candidate.feature_mask] = 1  # set present features to one
+
+        if not calculate_labels:
+            return None, data, None
+
+        if self.dataset:
+            return self.sample_dataset(candidate, data, num_samples, calculate_labels)
+        else:
+            return self.sample_mean_superpixel(
+                candidate, data, num_samples, calculate_labels
+            )
+
+    def sample_dataset(
+        self, candidate: AnchorCandidate, data: np.ndarray, num_samples: int,
+    ) -> Tuple[AnchorCandidate, np.ndarray, np.ndarray]:
+        perturb_sample = np.random.choice(
+            range(self.dataset.shape[0]), num_samples, replace=True
+        )
+
+        samples = np.stack(
+            [
+                self.__generate_image(mask, pimage)
+                for mask, pimage in zip(data, perturb_sample)
+            ],
+            axis=0,
+        )
+
+        preds = self.predict_fn(samples)
+        preds_max = np.argmax(preds, axis=1)
+        labels = (preds_max == self.label).astype(int)
+
+        # update candidate
+        candidate.update_precision(np.sum(labels), num_samples)
+
+        return candidate, data, self.segments
+
+    def sample_mean_superpixel(
+        self, candidate: AnchorCandidate, data: np.ndarray, num_samples: int,
     ) -> Tuple[AnchorCandidate, np.ndarray, np.ndarray]:
         """
         Sample function for image data.
@@ -170,18 +213,16 @@ class ImageSampler(Sampler):
         Returns:
             candidate: AnchorCandidate
         """
-        data = np.random.randint(
-            0, 2, size=(num_samples, self._n_features)
-        )  # generate random feature mask for each sample
-        data[:, candidate.feature_mask] = 1  # set present features to one
+        samples = np.stack(
+            [self.__generate_image(mask, self.sp_image) for mask in data], axis=0
+        )
 
-        if not calculate_labels:
-            return None, data, None
+        preds = self.predict_fn(samples)
 
-        samples = np.stack([self.__generate_image(mask) for mask in data], axis=0)
-        input = torch.Tensor(samples)
+        # assert isinstance(
+        #     preds, np.ndarray
+        # ), "Result of your predict function should be of type numpy.ndarray"
 
-        preds = self.predict_fn(input.permute(0, 3, 1, 2)).cpu().detach().numpy()
         preds_max = np.argmax(preds, axis=1)
         labels = (preds_max == self.label).astype(int)
 
@@ -190,7 +231,9 @@ class ImageSampler(Sampler):
 
         return candidate, data, self.segments  # TODO remove third return variable
 
-    def __generate_image(self, feature_mask: np.ndarray) -> np.array:
+    def __generate_image(
+        self, feature_mask: np.ndarray, perturb_image: np.ndarray
+    ) -> np.array:
         """
         Generate sample image given some feature mask.
         The true image will get permutated dependent on the feature mask.
@@ -206,7 +249,7 @@ class ImageSampler(Sampler):
         mask = np.zeros(self.segments.shape).astype(bool)
         for z in zeros:
             mask[self.segments == z] = True
-        img[mask] = self.sp_image[mask]
+        img[mask] = perturb_image[mask]
 
         return img
 
@@ -219,6 +262,6 @@ class TextSampler(Sampler):
     type: Tasktype = Tasktype.TEXT
 
     def sample(
-        self, input: any, predict_fn: Callable[[any], torch.Tensor]
+        self, input: any, predict_fn: Callable[[any], np.ndarray],
     ) -> Tuple[AnchorCandidate, np.ndarray, np.ndarray]:
         ...
