@@ -68,9 +68,7 @@ class Anchor:
         elif method == "smac":
             logging.info(" Start SMAC Search")
             exp = self.__smac_anchor(
-                desired_confidence=desired_confidence,
-                batch_size=batch_size,
-                beam_size=beam_size,
+                desired_confidence=desired_confidence, batch_size=batch_size,
             )
 
         return exp
@@ -200,42 +198,44 @@ class Anchor:
         return best_candidate
 
     def __smac_search(
-        self, desired_confidence: float, batch_size: int, beam_size: int,
+        self, desired_confidence: float, batch_size: int,
     ):
-        raise NotImplementedError()
-
         # create config space
         configspace = ConfigurationSpace()
-        
+
         # mask the possible features
         for i in range(self.sampler.num_features):
             configspace.add_hyperparameter(UniformIntegerHyperparameter(str(i), 0, 1))
 
         # create Szenario
-        scenario = Scenario({
-            "run_obj": "quality",
-            "runcount-limit": 100,
-            "cs": configspace,
-        })
+        scenario = Scenario(
+            {
+                "run_obj": "quality",
+                "algo_runs_timelimit": 5 * 60,
+                "runcount-limit": 100,
+                "cs": configspace,
+            }
+        )
 
-        # create optimizer 
+        # create optimizer
         smac = SMAC4BB(scenario=scenario, tae_runner=self.__smac_optimize)
-        best_found_config = smac.optimize() # should also return found precision and coverage - Maybe we can get this to return the full candidate 
+        best_found_config = (
+            smac.optimize()
+        )  # should also return found precision and coverage - Maybe we can get this to return the full candidate
 
-        # return candidate 
+        # return candidate
+
+        return None
 
     def __smac_optimize(self, config):
-        raise NotImplementedError()
-
+        print(config)
         # create candidate from config which is the feature mask to evaluate
+        candidate = AnchorCandidate([])
+        # calculate expected precision with kl-divergence
+        candidate = self.kl_lucb.get_best_candidates([candidate], self.sampler, 1)
+        # return some custom loss with regards to coverage and loss
 
-        # calculate expected precision with kl-divergence and maybe coverage
+        info = {"candidate": candidate}
 
-        # return some custom loss with regards to coverage and loss 
-
-        info = {
-            "candidate" : candidate
-        }
-
-        return # loss, info
+        return 1 - candidate.precision, info
 

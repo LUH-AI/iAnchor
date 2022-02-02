@@ -64,7 +64,8 @@ class TabularSampler(Sampler):
     def __init__(
         self, input: any, predict_fn: Callable[[any], np.array], dataset: any, **kwargs
     ):
-        if not dataset:
+        print(dataset)
+        if dataset is None:
             assert "Dataset must be given for tabular explaination."
 
         self.predict_fn = predict_fn
