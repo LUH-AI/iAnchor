@@ -38,9 +38,9 @@ class Anchor:
     def explain_instance(
         self,
         input: any,
-        dataset: any,
         predict_fn: Callable[[any], np.array],
         method: str = "greedy",
+        dataset: any = None,
         num_coverage_samples: int = 10000,
         desired_confidence: float = 1,
         epsilon: float = 0.15,

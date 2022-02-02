@@ -103,11 +103,6 @@ class TabularSampler(Sampler):
         # predict samples
         preds = self.predict_fn(samples)
 
-        # assert isinstance(
-        #     preds, np.ndarray
-        # ), "Result of your predict function should be of type numpy.ndarray"
-        # (16, )
-        # preds_max = np.argmax(preds, axis=1)
         labels = (preds == self.label).astype(int)
 
         # update candidate
@@ -133,7 +128,7 @@ class ImageSampler(Sampler):
         assert input.shape[2] == 3
         assert len(input.shape) == 3
 
-        self.label = np.argmax(predict_fn(input[np.newaxis, ...]), axis=1,)
+        self.label = predict_fn(input[np.newaxis, ...])
 
         input = input.cpu().detach().numpy()
         # run segmentation on the image
@@ -170,31 +165,28 @@ class ImageSampler(Sampler):
         if not calculate_labels:
             return None, data, None
 
-        if self.dataset:
-            return self.sample_dataset(candidate, data, num_samples, calculate_labels)
+        if self.dataset is not None:
+            return self.sample_dataset(candidate, data, num_samples)
         else:
-            return self.sample_mean_superpixel(
-                candidate, data, num_samples, calculate_labels
-            )
+            return self.sample_mean_superpixel(candidate, data, num_samples)
 
     def sample_dataset(
         self, candidate: AnchorCandidate, data: np.ndarray, num_samples: int,
     ) -> Tuple[AnchorCandidate, np.ndarray, np.ndarray]:
-        perturb_sample = np.random.choice(
+        perturb_sample_idxs = np.random.choice(
             range(self.dataset.shape[0]), num_samples, replace=True
         )
 
         samples = np.stack(
             [
-                self.__generate_image(mask, pimage)
-                for mask, pimage in zip(data, perturb_sample)
+                self.__generate_image(mask, self.dataset[pidx])
+                for mask, pidx in zip(data, perturb_sample_idxs)
             ],
             axis=0,
         )
 
         preds = self.predict_fn(samples)
-        preds_max = np.argmax(preds, axis=1)
-        labels = (preds_max == self.label).astype(int)
+        labels = (preds == self.label).astype(int)
 
         # update candidate
         candidate.update_precision(np.sum(labels), num_samples)
@@ -224,8 +216,7 @@ class ImageSampler(Sampler):
         #     preds, np.ndarray
         # ), "Result of your predict function should be of type numpy.ndarray"
 
-        preds_max = np.argmax(preds, axis=1)
-        labels = (preds_max == self.label).astype(int)
+        labels = (preds == self.label).astype(int)
 
         # update candidate
         candidate.update_precision(np.sum(labels), num_samples)
