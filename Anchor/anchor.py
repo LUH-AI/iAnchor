@@ -10,6 +10,12 @@ from Anchor.bandit import KL_LUCB
 from Anchor.candidate import AnchorCandidate
 from Anchor.sampler import Sampler, Tasktype
 
+from smac.facade.smac_bb_facade import SMAC4BB
+from smac.scenario.scenario import Scenario
+
+from ConfigSpace import ConfigurationSpace
+from ConfigSpace.hyperparameters import UniformIntegerHyperparameter
+
 
 @dataclass()
 class Anchor:
@@ -197,4 +203,39 @@ class Anchor:
         self, desired_confidence: float, batch_size: int, beam_size: int,
     ):
         raise NotImplementedError()
+
+        # create config space
+        configspace = ConfigurationSpace()
+        
+        # mask the possible features
+        for i in range(self.sampler.num_features):
+            configspace.add_hyperparameter(UniformIntegerHyperparameter(str(i), 0, 1))
+
+        # create Szenario
+        scenario = Scenario({
+            "run_obj": "quality",
+            "runcount-limit": 100,
+            "cs": configspace,
+        })
+
+        # create optimizer 
+        smac = SMAC4BB(scenario=scenario, tae_runner=self.__smac_optimize)
+        best_found_config = smac.optimize() # should also return found precision and coverage - Maybe we can get this to return the full candidate 
+
+        # return candidate 
+
+    def __smac_optimize(self, config):
+        raise NotImplementedError()
+
+        # create candidate from config which is the feature mask to evaluate
+
+        # calculate expected precision with kl-divergence and maybe coverage
+
+        # return some custom loss with regards to coverage and loss 
+
+        info = {
+            "candidate" : candidate
+        }
+
+        return # loss, info
 
