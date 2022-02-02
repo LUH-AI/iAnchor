@@ -137,7 +137,7 @@ class Anchor:
 
             ub = KL_LUCB.dup_bernoulli(prec, beta / nc.n_samples)
 
-        print(lb, ub, prec)
+        # print(lb, ub, prec)
         return prec >= dconf and lb > dconf - eps_stop
 
     def __greedy_anchor(
@@ -197,7 +197,7 @@ class Anchor:
 
         return best_candidate
 
-    def __smac_search(
+    def __smac_anchor(
         self, desired_confidence: float, batch_size: int,
     ):
         # create config space
@@ -211,31 +211,37 @@ class Anchor:
         scenario = Scenario(
             {
                 "run_obj": "quality",
-                "algo_runs_timelimit": 5 * 60,
-                "runcount-limit": 100,
+                "algo_runs_timelimit": 1 * 60,
                 "cs": configspace,
+                "budget": 16,
+                "save_instantly": False,
             }
         )
 
         # create optimizer
-        smac = SMAC4BB(scenario=scenario, tae_runner=self.__smac_optimize)
-        best_found_config = (
+        smac = SMAC4BB(scenario=scenario, tae_runner=self.smac_optimize,)
+        best_mask = (
             smac.optimize()
         )  # should also return found precision and coverage - Maybe we can get this to return the full candidate
 
         # return candidate
+        feature_mask = [int(f_idx) for f_idx, mv in best_mask.items() if mv]
 
-        return None
+        return AnchorCandidate(feature_mask)
 
-    def __smac_optimize(self, config):
-        print(config)
+    def smac_optimize(self, config, budget):
+        feature_mask = [int(f_idx) for f_idx, mv in config.items() if mv]
+        print(feature_mask, budget)
         # create candidate from config which is the feature mask to evaluate
-        candidate = AnchorCandidate([])
+        candidate = AnchorCandidate(feature_mask)
         # calculate expected precision with kl-divergence
-        candidate = self.kl_lucb.get_best_candidates([candidate], self.sampler, 1)
+        candidate, _, _ = self.sampler.sample(
+            candidate, 16
+        )  # this must be changed to something custom that we can give via. parameter
+        print(candidate)
         # return some custom loss with regards to coverage and loss
 
-        info = {"candidate": candidate}
+        info = {"precision": candidate.precision}
 
         return 1 - candidate.precision, info
 

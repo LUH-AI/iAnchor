@@ -36,7 +36,7 @@ class KL_LUCB:
             sampler: Sampler
             top_n: int
         Returns:
-            best_candidate_idxs: np.array
+            best_candidates: list[AnchorCandidate]
         """
 
         assert len(candidates) > 0
@@ -50,7 +50,7 @@ class KL_LUCB:
         )
         prec_diff = prec_ub[ut] - prec_lb[lt]
         while prec_diff > self.eps:
-            logging.info(prec_diff)
+            # logging.info(prec_diff)
             candidates[ut], _, _ = sampler.sample(candidates[ut], self.batch_size)
             candidates[lt], _, _ = sampler.sample(candidates[lt], self.batch_size)
 
