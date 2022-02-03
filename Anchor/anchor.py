@@ -1,4 +1,6 @@
 import logging
+
+logging.basicConfig(level=logging.INFO)
 from dataclasses import dataclass, field
 from enum import Enum, auto
 from typing import Callable, Optional, Protocol, Tuple, Union
@@ -50,26 +52,23 @@ class Anchor:
     ):
         self.kl_lucb = KL_LUCB(eps=epsilon, batch_size=batch_size, verbose=verbose)
         self.sampler = Sampler.create(self.tasktype, input, predict_fn, dataset)
+        self.batch_size = batch_size
         logging.info(" Start Sampling")
         _, self.coverage_data, _ = self.sampler.sample(
-            AnchorCandidate(_feature_mask=[]), num_coverage_samples, False
+            AnchorCandidate(feature_mask=[]), num_coverage_samples, False
         )
-        exp = AnchorCandidate(_feature_mask=[])
+        exp = AnchorCandidate(feature_mask=[])
         if method == "greedy":
             logging.info(" Start Greedy Search")
             exp = self.__greedy_anchor()
         elif method == "beam":
             logging.info(" Start Beam Search")
             exp = self.__beam_anchor(
-                desired_confidence=desired_confidence,
-                batch_size=batch_size,
-                beam_size=beam_size,
+                desired_confidence=desired_confidence, beam_size=beam_size,
             )
         elif method == "smac":
             logging.info(" Start SMAC Search")
-            exp = self.__smac_anchor(
-                desired_confidence=desired_confidence, batch_size=batch_size,
-            )
+            exp = self.__smac_anchor(desired_confidence=desired_confidence,)
 
         return exp
 
@@ -86,7 +85,7 @@ class Anchor:
         for feature in range(self.sampler.num_features):
             # check if we have no prev anchors and create a complete new set
             if len(prev_anchors) == 0:
-                nc = AnchorCandidate(_feature_mask=[feature])
+                nc = AnchorCandidate(feature_mask=[feature])
                 new_candidates.append(nc)
 
             for anchor in prev_anchors:
@@ -98,7 +97,7 @@ class Anchor:
                 tmp = anchor.feature_mask.copy()
                 tmp.append(feature)
 
-                nc = AnchorCandidate(_feature_mask=tmp)
+                nc = AnchorCandidate(feature_mask=tmp)
                 nc.coverage = self.__calculate_coverage(nc)
                 if nc.coverage >= coverage_min:
                     new_candidates.append(nc)
@@ -141,10 +140,7 @@ class Anchor:
         return prec >= dconf and lb > dconf - eps_stop
 
     def __greedy_anchor(
-        self,
-        desired_confidence: float = 1,
-        batch_size: int = 100,
-        min_coverage: float = 0.2,
+        self, desired_confidence: float = 1, min_coverage: float = 0.2,
     ):
         """
         Greedy Approach to calculate the shortest anchor, which fullfills the precision constraint EQ3.
@@ -161,7 +157,7 @@ class Anchor:
         return anchor
 
     def __beam_anchor(
-        self, desired_confidence: float, batch_size: int, beam_size: int,
+        self, desired_confidence: float, beam_size: int,
     ):
 
         max_anchor_size = self.sampler.num_features
@@ -186,7 +182,7 @@ class Anchor:
                     self.__check_valid_candidate(
                         c,
                         beam_size=beam_size,
-                        sample_count=batch_size,
+                        sample_count=self.batch_size,
                         dconf=desired_confidence,
                     )
                     and c.coverage > best_candidate.coverage
@@ -198,7 +194,7 @@ class Anchor:
         return best_candidate
 
     def __smac_anchor(
-        self, desired_confidence: float, batch_size: int,
+        self, desired_confidence: float,
     ):
         # create config space
         configspace = ConfigurationSpace()
@@ -211,37 +207,39 @@ class Anchor:
         scenario = Scenario(
             {
                 "run_obj": "quality",
-                "algo_runs_timelimit": 1 * 60,
+                "algo_runs_timelimit": 10 * 60,
                 "cs": configspace,
-                "budget": 16,
-                "save_instantly": False,
+                "deterministic": "true",  # each config gets evaluated once, other option would be to track candidates and average precision / coverage
             }
         )
 
         # create optimizer
-        smac = SMAC4BB(scenario=scenario, tae_runner=self.smac_optimize,)
+        smac = SMAC4BB(
+            scenario=scenario,
+            tae_runner=self.smac_optimize,
+            rng=np.random.RandomState(42),  # TODO change to global seed
+        )
         best_mask = (
             smac.optimize()
-        )  # should also return found precision and coverage - Maybe we can get this to return the full candidate
+        )  # TODO should also return found precision and coverage - Maybe we can get this to return the full candidate
 
         # return candidate
         feature_mask = [int(f_idx) for f_idx, mv in best_mask.items() if mv]
 
         return AnchorCandidate(feature_mask)
 
-    def smac_optimize(self, config, budget):
+    def smac_optimize(self, config):
         feature_mask = [int(f_idx) for f_idx, mv in config.items() if mv]
-        print(feature_mask, budget)
         # create candidate from config which is the feature mask to evaluate
         candidate = AnchorCandidate(feature_mask)
         # calculate expected precision with kl-divergence
         candidate, _, _ = self.sampler.sample(
-            candidate, 16
+            candidate, self.batch_size
         )  # this must be changed to something custom that we can give via. parameter
-        print(candidate)
+        candidate.coverage = self.__calculate_coverage(candidate)
         # return some custom loss with regards to coverage and loss
 
-        info = {"precision": candidate.precision}
+        info = {"precision": candidate.precision, "coverage": candidate.coverage}
 
-        return 1 - candidate.precision, info
+        return ((1 - candidate.precision) + (1 - candidate.coverage)) / 2, info
 
