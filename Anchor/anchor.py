@@ -68,7 +68,7 @@ class Anchor:
             )
         elif method == "smac":
             logging.info(" Start SMAC Search")
-            exp = self.__smac_anchor(desired_confidence=desired_confidence,)
+            exp = self.__smac_anchor()
 
         return exp
 
@@ -148,7 +148,9 @@ class Anchor:
         candidates = self.generate_candidates([], min_coverage)
         anchor = self.kl_lucb.get_best_candidates(candidates, self.sampler, 1)[0]
 
-        while not self.__check_valid_candidate(anchor):
+        while not self.__check_valid_candidate(
+            anchor, 1, self.batch_size, desired_confidence
+        ):
             candidates = self.generate_candidates([anchor], min_coverage)
             logging.info(candidates)
             anchor = self.kl_lucb.get_best_candidates(candidates, self.sampler, 1)[0]
@@ -193,9 +195,7 @@ class Anchor:
 
         return best_candidate
 
-    def __smac_anchor(
-        self, desired_confidence: float,
-    ):
+    def __smac_anchor(self,):
         # create config space
         configspace = ConfigurationSpace()
 
@@ -207,7 +207,7 @@ class Anchor:
         scenario = Scenario(
             {
                 "run_obj": "quality",
-                "algo_runs_timelimit": 10 * 60,
+                "algo_runs_timelimit": 1 * 30,
                 "cs": configspace,
                 "deterministic": "true",  # each config gets evaluated once, other option would be to track candidates and average precision / coverage
             }
@@ -222,22 +222,25 @@ class Anchor:
         best_mask = (
             smac.optimize()
         )  # TODO should also return found precision and coverage - Maybe we can get this to return the full candidate
-
         # return candidate
         feature_mask = [int(f_idx) for f_idx, mv in best_mask.items() if mv]
+        stats = smac.runhistory.data[
+            next(reversed(smac.runhistory.data))
+        ].additional_info
 
-        return AnchorCandidate(feature_mask)
+        return AnchorCandidate(
+            feature_mask=feature_mask,
+            precision=stats["precision"],
+            coverage=stats["coverage"],
+        )
 
     def smac_optimize(self, config):
         feature_mask = [int(f_idx) for f_idx, mv in config.items() if mv]
         # create candidate from config which is the feature mask to evaluate
         candidate = AnchorCandidate(feature_mask)
-        # calculate expected precision with kl-divergence
-        candidate, _, _ = self.sampler.sample(
-            candidate, self.batch_size
-        )  # this must be changed to something custom that we can give via. parameter
+        # calculate expected precision
+        candidate, _, _ = self.sampler.sample(candidate, self.batch_size)
         candidate.coverage = self.__calculate_coverage(candidate)
-        # return some custom loss with regards to coverage and loss
 
         info = {"precision": candidate.precision, "coverage": candidate.coverage}
 
