@@ -1,5 +1,7 @@
 import logging
 
+from Anchor.visualizer import Visualizer
+
 logging.basicConfig(level=logging.INFO)
 from dataclasses import dataclass, field
 from enum import Enum, auto
@@ -17,6 +19,7 @@ from smac.scenario.scenario import Scenario
 
 from ConfigSpace import ConfigurationSpace
 from ConfigSpace.hyperparameters import UniformIntegerHyperparameter
+from .visualizer import Visualizer
 
 
 @dataclass()
@@ -31,6 +34,7 @@ class Anchor:
 
     tasktype: Tasktype
     sampler: Sampler = field(init=False)
+    visualizer: Visualizer = field(init=False)
     verbose: bool = False
     coverage_data: np.array = field(init=False)
 
@@ -72,9 +76,8 @@ class Anchor:
 
         return exp
 
-    def visualize(self):
-        # TODO: Adapt to different input types
-        return self.sampler.image, self.sampler.sp_image  #
+    def visualize(self, anchor: AnchorCandidate, instance: np.ndarray):
+        Visualizer.create(self.tasktype).visualize(anchor, instance, self.sampler.features)
 
     def generate_candidates(
         self, prev_anchors: list[AnchorCandidate], coverage_min: float

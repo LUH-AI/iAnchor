@@ -111,6 +111,8 @@ class TabularSampler(Sampler):
         return candidate, masks, None  # TODO remove third return variable
 
 
+
+
 class ImageSampler(Sampler):
     """
     Image sampling with the help of superpixels.
@@ -130,21 +132,21 @@ class ImageSampler(Sampler):
 
         self.label = predict_fn(input[np.newaxis, ...])
 
-        input = input.cpu().detach().numpy()
+        input = input.clone().cpu().detach().numpy()
         # run segmentation on the image
-        self.segments = quickshift(
+        self.features = quickshift(
             input.astype(np.double), kernel_size=4, max_dist=200, ratio=0.2
         )
 
         # parameters from original implementation
-        segment_features = np.unique(self.segments)
+        segment_features = np.unique(self.features)
         self._n_features = len(segment_features)
 
         # create superpixel image by replacing superpixels by its mean in the original image
         self.sp_image = np.copy(input)
         for spixel in segment_features:
-            self.sp_image[self.segments == spixel, :] = np.mean(
-                self.sp_image[self.segments == spixel, :], axis=0
+            self.sp_image[self.features == spixel, :] = np.mean(
+                self.sp_image[self.features == spixel, :], axis=0
             )
 
         self.image = input
@@ -191,7 +193,7 @@ class ImageSampler(Sampler):
         # update candidate
         candidate.update_precision(np.sum(labels), num_samples)
 
-        return candidate, data, self.segments
+        return candidate, data, self.features
 
     def sample_mean_superpixel(
         self, candidate: AnchorCandidate, data: np.ndarray, num_samples: int,
@@ -221,7 +223,7 @@ class ImageSampler(Sampler):
         # update candidate
         candidate.update_precision(np.sum(labels), num_samples)
 
-        return candidate, data, self.segments  # TODO remove third return variable
+        return candidate, data, self.features  # TODO remove third return variable
 
     def __generate_image(
         self, feature_mask: np.ndarray, perturb_image: np.ndarray
@@ -238,9 +240,9 @@ class ImageSampler(Sampler):
         """
         img = self.image.copy()
         zeros = np.where(feature_mask == 0)[0]
-        mask = np.zeros(self.segments.shape).astype(bool)
+        mask = np.zeros(self.features.shape).astype(bool)
         for z in zeros:
-            mask[self.segments == z] = True
+            mask[self.features == z] = True
         img[mask] = perturb_image[mask]
 
         return img
