@@ -8,17 +8,16 @@ from enum import Enum, auto
 from typing import Callable, Optional, Protocol, Tuple, Union
 
 import numpy as np
+from ConfigSpace import ConfigurationSpace
+from ConfigSpace.hyperparameters import UniformIntegerHyperparameter
 from skimage.segmentation import quickshift
+from smac.facade.smac_bb_facade import SMAC4BB
+from smac.scenario.scenario import Scenario
 
 from Anchor.bandit import KL_LUCB
 from Anchor.candidate import AnchorCandidate
 from Anchor.sampler import Sampler, Tasktype
 
-from smac.facade.smac_bb_facade import SMAC4BB
-from smac.scenario.scenario import Scenario
-
-from ConfigSpace import ConfigurationSpace
-from ConfigSpace.hyperparameters import UniformIntegerHyperparameter
 from .visualizer import Visualizer
 
 
@@ -46,17 +45,40 @@ class Anchor:
         input: any,
         predict_fn: Callable[[any], np.array],
         method: str = "greedy",
-        dataset: any = None,
+        task_specific: dict = dict(),
+        method_specific: dict = dict(),
         num_coverage_samples: int = 10000,
-        desired_confidence: float = 1,
         epsilon: float = 0.15,
         batch_size: int = 16,
-        beam_size=4,
         verbose=False,
+        seed=69,
     ):
+        """
+        Main entrance point to explain an instance.
+
+        Args:
+            input (Any): The instance to explain - can be an image, data row or text.
+            predict_fn (Callable): A function that returns the class prediction for a sample (can be wrapped with provided wrapper functions).
+            method (String): Defines the optimization function. Can be (``greedy``), (``beam``) or (``smac``).
+            dataset (np.array): The dataset for permutation. Could be images for image task or tabular data for tabular task.
+            task_specific (dict): Task specific arguments. For tabular this includes the (``column_names``) and (``dataset``) argument. For images it includes (``dataset``).
+            method_specific (dict): Optimization method specific arguments. For Beam Search this includes (``beam_size``) and (``desired_confidence``). For greedy this includes (``desired_confidence``). For Smac this includes (``run_time``).
+            num_coverage_samples (int): Number of coverage samples
+            desired_confidence (float): desired precision confidence for the anchor.
+            epsilon (float)
+            batch_size (int)
+            verbose (bool)
+
+        Returns:
+            exp (AnchorCandidate): The explanation of the original instance.
+
+        """
+        np.random.seed(seed)
+
         self.kl_lucb = KL_LUCB(eps=epsilon, batch_size=batch_size, verbose=verbose)
-        self.sampler = Sampler.create(self.tasktype, input, predict_fn, dataset)
+        self.sampler = Sampler.create(self.tasktype, input, predict_fn, task_specific)
         self.batch_size = batch_size
+
         logging.info(" Start Sampling")
         _, self.coverage_data, _ = self.sampler.sample(
             AnchorCandidate(feature_mask=[]), num_coverage_samples, False
@@ -64,20 +86,20 @@ class Anchor:
         exp = AnchorCandidate(feature_mask=[])
         if method == "greedy":
             logging.info(" Start Greedy Search")
-            exp = self.__greedy_anchor()
+            exp = self.__greedy_anchor(**method_specific)
         elif method == "beam":
             logging.info(" Start Beam Search")
-            exp = self.__beam_anchor(
-                desired_confidence=desired_confidence, beam_size=beam_size,
-            )
+            exp = self.__beam_anchor(**method_specific)
         elif method == "smac":
             logging.info(" Start SMAC Search")
-            exp = self.__smac_anchor()
+            exp = self.__smac_anchor(**method_specific)
 
         return exp
 
     def visualize(self, anchor: AnchorCandidate, instance: np.ndarray):
-        Visualizer.create(self.tasktype).visualize(anchor, instance, self.sampler.features)
+        return Visualizer.create(self.tasktype).visualize(
+            anchor, instance, self.sampler.features
+        )
 
     def generate_candidates(
         self, prev_anchors: list[AnchorCandidate], coverage_min: float
@@ -128,8 +150,8 @@ class Anchor:
         prec = candidate.precision
         beta = np.log(1.0 / (delta / (1 + (beam_size - 1) * self.sampler.num_features)))
 
-        lb = KL_LUCB.dlow_bernoulli(prec, beta / candidate.n_samples)
-        ub = KL_LUCB.dup_bernoulli(prec, beta / candidate.n_samples)
+        lb = KL_LUCB.dlow_bernoulli(prec, beta / max(candidate.n_samples, 1))
+        ub = KL_LUCB.dup_bernoulli(prec, beta / max(candidate.n_samples, 1))
         while (prec >= dconf and lb < dconf - eps_stop) or (
             prec < dconf and ub >= dconf + eps_stop
         ):
@@ -143,7 +165,9 @@ class Anchor:
         return prec >= dconf and lb > dconf - eps_stop
 
     def __greedy_anchor(
-        self, desired_confidence: float = 1, min_coverage: float = 0.2,
+        self,
+        desired_confidence: float = 1,
+        min_coverage: float = 0.2,
     ):
         """
         Greedy Approach to calculate the shortest anchor, which fullfills the precision constraint EQ3.
@@ -162,7 +186,9 @@ class Anchor:
         return anchor
 
     def __beam_anchor(
-        self, desired_confidence: float, beam_size: int,
+        self,
+        desired_confidence: float,
+        beam_size: int,
     ):
 
         max_anchor_size = self.sampler.num_features
@@ -173,7 +199,8 @@ class Anchor:
         while current_anchor_size < max_anchor_size:
             # Generate candidates
             candidates = self.generate_candidates(
-                best_of_size[current_anchor_size - 1], best_candidate.coverage,
+                best_of_size[current_anchor_size - 1],
+                best_candidate.coverage,
             )
             if len(candidates) == 0:
                 break
@@ -198,7 +225,7 @@ class Anchor:
 
         return best_candidate
 
-    def __smac_anchor(self,):
+    def __smac_anchor(self, run_time):
         # create config space
         configspace = ConfigurationSpace()
 
@@ -210,7 +237,7 @@ class Anchor:
         scenario = Scenario(
             {
                 "run_obj": "quality",
-                "algo_runs_timelimit": 1 * 30,
+                "algo_runs_timelimit": run_time,
                 "cs": configspace,
                 "deterministic": "true",  # each config gets evaluated once, other option would be to track candidates and average precision / coverage
             }
@@ -248,4 +275,3 @@ class Anchor:
         info = {"precision": candidate.precision, "coverage": candidate.coverage}
 
         return ((1 - candidate.precision) + (1 - candidate.coverage)) / 2, info
-

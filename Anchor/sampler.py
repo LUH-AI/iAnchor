@@ -3,12 +3,12 @@ from dataclasses import dataclass, field
 from enum import Enum, auto
 from typing import Callable, Optional, Protocol, Tuple, Union
 
+import matplotlib.pyplot as plt
 import numpy as np
 import torch
 from skimage.segmentation import quickshift
 
 from .candidate import AnchorCandidate
-import matplotlib.pyplot as plt
 
 
 class Tasktype(Enum):
@@ -40,7 +40,12 @@ class Sampler:
 
     @classmethod
     def create(
-        cls, type: Tasktype, input: any, predict_fn: Callable, dataset: any, **kwargs
+        cls,
+        type: Tasktype,
+        input: any,
+        predict_fn: Callable,
+        task_specific: dict,
+        **kwargs
     ):
         """
         Creates subclass depending on typ.
@@ -54,7 +59,7 @@ class Sampler:
             raise ValueError("Bad message type {}".format(type))
 
         return cls.subclasses[type](
-            input, predict_fn, dataset, **kwargs
+            input, predict_fn, **task_specific
         )  # every sampler needs input and predict function
 
 
@@ -62,17 +67,27 @@ class TabularSampler(Sampler):
     type: Tasktype = Tasktype.TABULAR
 
     def __init__(
-        self, input: any, predict_fn: Callable[[any], np.array], dataset: any, **kwargs
+        self,
+        input: any,
+        predict_fn: Callable[[any], np.array],
+        dataset: any,
+        column_names: list,
     ):
-        print(dataset)
         if dataset is None:
             assert "Dataset must be given for tabular explaination."
+        if column_names is None:
+            assert "Column names must be given for tabular explaination."
 
         self.predict_fn = predict_fn
         self.input = input
         self.label = predict_fn(input)
         self.dataset = dataset
+        self.features = column_names
         self.num_features = self.dataset.shape[1]
+
+        assert (
+            len(column_names) == self.num_features
+        ), "column_names length must match dataset column dimension."
 
     def sample(
         self,
@@ -111,8 +126,6 @@ class TabularSampler(Sampler):
         return candidate, masks, None  # TODO remove third return variable
 
 
-
-
 class ImageSampler(Sampler):
     """
     Image sampling with the help of superpixels.
@@ -125,7 +138,7 @@ class ImageSampler(Sampler):
     type: Tasktype = Tasktype.IMAGE
 
     def __init__(
-        self, input: any, predict_fn: Callable[[any], np.array], dataset: any, **kwargs
+        self, input: any, predict_fn: Callable[[any], np.array], dataset: any = None
     ):
         assert input.shape[2] == 3
         assert len(input.shape) == 3
@@ -173,7 +186,10 @@ class ImageSampler(Sampler):
             return self.sample_mean_superpixel(candidate, data, num_samples)
 
     def sample_dataset(
-        self, candidate: AnchorCandidate, data: np.ndarray, num_samples: int,
+        self,
+        candidate: AnchorCandidate,
+        data: np.ndarray,
+        num_samples: int,
     ) -> Tuple[AnchorCandidate, np.ndarray, np.ndarray]:
         perturb_sample_idxs = np.random.choice(
             range(self.dataset.shape[0]), num_samples, replace=True
@@ -196,7 +212,10 @@ class ImageSampler(Sampler):
         return candidate, data, self.features
 
     def sample_mean_superpixel(
-        self, candidate: AnchorCandidate, data: np.ndarray, num_samples: int,
+        self,
+        candidate: AnchorCandidate,
+        data: np.ndarray,
+        num_samples: int,
     ) -> Tuple[AnchorCandidate, np.ndarray, np.ndarray]:
         """
         Sample function for image data.
@@ -256,6 +275,8 @@ class TextSampler(Sampler):
     type: Tasktype = Tasktype.TEXT
 
     def sample(
-        self, input: any, predict_fn: Callable[[any], np.ndarray],
+        self,
+        input: any,
+        predict_fn: Callable[[any], np.ndarray],
     ) -> Tuple[AnchorCandidate, np.ndarray, np.ndarray]:
         ...

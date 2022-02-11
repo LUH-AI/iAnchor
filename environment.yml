@@ -16,3 +16,4 @@ dependencies:
       - pdoc3
       - smac
       - ConfigSpace
+      - tensorflow

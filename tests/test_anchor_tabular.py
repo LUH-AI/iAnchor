@@ -1,10 +1,11 @@
+import os
+
+import numpy as np
 import pytest
-from Anchor.anchor import Anchor
-from Anchor.sampler import Tasktype
 import sklearn
 import sklearn.ensemble
-import numpy as np
-import os
+from Anchor.anchor import Anchor
+from Anchor.sampler import Tasktype
 
 """
 Test funtions for tabular data anchor explainations
@@ -17,7 +18,6 @@ def setup():
     For tabular tests we use the titanic dataset since its widely explored
     and the important features for explanations are known
     """
-    np.random.seed(69)
     data = np.genfromtxt("datasets/titanic.txt", delimiter=",")
     y_train = data[:, -1]
     X_train = data[:, :-1]
