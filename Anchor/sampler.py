@@ -2,13 +2,21 @@ import logging
 from dataclasses import dataclass, field
 from enum import Enum, auto
 from typing import Callable, Optional, Protocol, Tuple, Union
-
+from transformers import DistilBertTokenizer, DistilBertForMaskedLM
+import torch
 import numpy as np
 import torch
 from skimage.segmentation import quickshift
 
 from .candidate import AnchorCandidate
 import matplotlib.pyplot as plt
+import spacy
+
+
+def exp_normalize(x):
+    b = x.max()
+    y = np.exp(x - b)
+    return y / y.sum()
 
 
 class Tasktype(Enum):
@@ -64,7 +72,6 @@ class TabularSampler(Sampler):
     def __init__(
         self, input: any, predict_fn: Callable[[any], np.array], dataset: any, **kwargs
     ):
-        print(dataset)
         if dataset is None:
             assert "Dataset must be given for tabular explaination."
 
@@ -253,7 +260,100 @@ class ImageSampler(Sampler):
 class TextSampler(Sampler):
     type: Tasktype = Tasktype.TEXT
 
+    def __init__(
+        self, input: any, predict_fn: Callable[[any], np.array], dataset: any, **kwargs
+    ):
+        self.label = predict_fn([input])
+        nlp = spacy.load("en_core_web_sm")
+        self.input_processed = [word.text for word in nlp(input)]
+        self.num_features = len(self.input_processed)
+
+        self.predict_fn = predict_fn
+
+        self.tokenizer = DistilBertTokenizer.from_pretrained("distilbert-base-cased")
+        self.bert = DistilBertForMaskedLM.from_pretrained("distilbert-base-cased")
+
+        self.pr = {}
+        for i in range(len(self.input_processed)):
+            words = np.array(self.input_processed, dtype="|U80")
+            words[i] = self.tokenizer.mask_token
+
+            sentence = " ".join(words)
+            w, p = self.prob(sentence)[0]
+            self.pr[self.input_processed[i]] = min(
+                0.5, dict(zip(w, p)).get(np.array(self.input_processed)[i], 0.01)
+            )
+
+    def prob(self, sentence):
+        result = self.pred_topk_cbow(sentence)
+        return [(a, exp_normalize(b)) for a, b in result]
+
+    def pred_topk_cbow(self, sentence):
+        encoded_text = self.tokenizer.encode(sentence, add_special_tokens=True)
+        mask_token_idx = (
+            np.array(encoded_text) == self.tokenizer.mask_token_id
+        ).nonzero()[0]
+        input = torch.tensor([encoded_text])
+
+        with torch.no_grad():
+            output = self.bert(input)[0]
+
+        ret = []
+        for i in mask_token_idx:
+            v, top_preds = torch.topk(output[0, i], 500)
+            words = self.tokenizer.convert_ids_to_tokens(top_preds)
+            ret.append((words, v.numpy()))
+
+        return ret
+
     def sample(
-        self, input: any, predict_fn: Callable[[any], np.ndarray],
+        self,
+        candidate: AnchorCandidate,
+        num_samples: int,
+        calculate_labels: bool = True,
+    ):
+        data = np.zeros((num_samples, len(self.input_processed)))
+        for idx, word in enumerate(self.input_processed):
+            if idx in candidate.feature_mask:
+                continue
+
+            prob = self.pr[word]
+            data[:, idx] = np.random.choice([0, 1], num_samples, p=[1 - prob, prob])
+
+        data[:, candidate.feature_mask] = 1
+
+        if not calculate_labels:
+            return None, data, None
+
+        return self.__sample_pertubated_sentences(candidate, data, num_samples)
+
+    def __generate_sentance(self, feature_mask: np.ndarray) -> str:
+        sentence_cp = np.array(self.input_processed, dtype="|U80")
+        sentence_cp[feature_mask != 1] = self.tokenizer.mask_token
+
+        masks = np.where(feature_mask == 0)[0]
+
+        for mask in masks:
+            mod_sentence = " ".join(sentence_cp)
+            words, probs = self.prob(mod_sentence)[0]
+            sentence_cp[mask] = np.random.choice(words, p=probs)
+
+        feature_mask = sentence_cp == np.array(self.input_processed, dtype="|U80")
+
+        return " ".join(sentence_cp)
+
+    def __sample_pertubated_sentences(
+        self, candidate: AnchorCandidate, data: np.ndarray, num_samples: int,
     ) -> Tuple[AnchorCandidate, np.ndarray, np.ndarray]:
-        ...
+        sentences = np.apply_along_axis(self.__generate_sentance, 1, data).reshape(
+            -1, 1
+        )
+
+        # predict pertubed sentences
+        preds = self.predict_fn(sentences.flatten().tolist())
+        labels = (preds == self.label).astype(int)
+
+        # update candidate
+        candidate.update_precision(np.sum(labels), num_samples)
+
+        return candidate, data, None

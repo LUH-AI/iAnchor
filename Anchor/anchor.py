@@ -44,9 +44,9 @@ class Anchor:
         method: str = "greedy",
         dataset: any = None,
         num_coverage_samples: int = 10000,
-        desired_confidence: float = 1,
-        epsilon: float = 0.15,
-        batch_size: int = 16,
+        desired_confidence: float = 0.95,
+        epsilon: float = 0.5,
+        batch_size: int = 10,
         beam_size=4,
         verbose=False,
     ):
@@ -111,6 +111,7 @@ class Anchor:
             if np.all(np.isin(anchor.feature_mask, np.where(mask == 1)), axis=0):
                 included_samples += 1
 
+        print("Included samples", included_samples)
         return included_samples / self.coverage_data.shape[0]
 
     def __check_valid_candidate(
@@ -152,10 +153,8 @@ class Anchor:
             anchor, 1, self.batch_size, desired_confidence
         ):
             candidates = self.generate_candidates([anchor], min_coverage)
-            logging.info(candidates)
             anchor = self.kl_lucb.get_best_candidates(candidates, self.sampler, 1)[0]
 
-        logging.info(anchor)
         return anchor
 
     def __beam_anchor(
@@ -177,6 +176,7 @@ class Anchor:
             best_candidates = self.kl_lucb.get_best_candidates(
                 candidates, self.sampler, min(beam_size, len(candidates))
             )
+
             best_of_size[current_anchor_size] = best_candidates
 
             for c in best_candidates:

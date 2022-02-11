@@ -49,8 +49,10 @@ class KL_LUCB:
             candidates, prec_lb, prec_ub, t, top_n
         )
         prec_diff = prec_ub[ut] - prec_lb[lt]
+        print("eps", self.eps)
         while prec_diff > self.eps:
             # logging.info(prec_diff)
+            print("while loop", prec_diff)
             candidates[ut], _, _ = sampler.sample(candidates[ut], self.batch_size)
             candidates[lt], _, _ = sampler.sample(candidates[lt], self.batch_size)
 
@@ -64,6 +66,7 @@ class KL_LUCB:
             -top_n:
         ]  # use partioning
 
+        print("return")
         return [candidates[idx] for idx in best_candidates_idxs]
 
     def __update_bounds(

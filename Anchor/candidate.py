@@ -11,7 +11,7 @@ class AnchorCandidate:
     precision: float = 0
     n_samples: int = 0
     positive_samples: int = 0
-    coverage: float = 0
+    coverage: float = -1
 
     def update_precision(self, positives: int, n_samples: int):
         self.n_samples += n_samples
