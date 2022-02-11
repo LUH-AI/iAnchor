@@ -101,9 +101,9 @@ class KL_LUCB:
         )  # divide list into the top_n best candidates and the rest
 
         for f in j:
-            lb[f] = KL_LUCB.dlow_bernoulli(means[f], beta / candidates[f].n_samples)
+            lb[f] = KL_LUCB.dlow_bernoulli(means[f], beta / max(candidates[f].n_samples, 1))
         for f in nj:
-            ub[f] = KL_LUCB.dup_bernoulli(means[f], beta / candidates[f].n_samples)
+            ub[f] = KL_LUCB.dup_bernoulli(means[f], beta / max(candidates[f].n_samples, 1))
 
         ut = nj[np.argmax(ub[nj])] if len(nj) != 0 else 0
         # candidate where upper bound of candidate is maximal
