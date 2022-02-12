@@ -328,31 +328,40 @@ class TextSampler(Sampler):
         num_samples: int,
         calculate_labels: bool = True,
     ):
-        data = np.zeros((num_samples, len(self.input_processed)))
+        feature_masks = np.zeros((num_samples, len(self.input_processed)))
         for idx, word in enumerate(self.input_processed):
+            # for every word decide if we should mask it or not
             if idx in candidate.feature_mask:
                 continue
 
             prob = self.pr[word]
-            data[:, idx] = np.random.choice([0, 1], num_samples, p=[1 - prob, prob])
+            feature_masks[:, idx] = np.random.choice(
+                [0, 1], num_samples, p=[1 - prob, prob]
+            )
 
-        data[:, candidate.feature_mask] = 1
+        # unmask words in candidate mask
+        feature_masks[:, candidate.feature_mask] = 1
 
         if not calculate_labels:
-            return None, data, None
+            return None, feature_masks, None
 
-        return self.__sample_pertubated_sentences(candidate, data, num_samples)
+        return self.__sample_pertubated_sentences(candidate, feature_masks, num_samples)
 
     def __generate_sentance(self, feature_mask: np.ndarray) -> str:
+        # Generate new sentences by masking words according to the
+        # feature mask. Then new words are samples. This is done
+        # done word for word
+
+        # mask words given the feature mask
         sentence_cp = np.array(self.input_processed, dtype="|U80")
         sentence_cp[feature_mask != 1] = self.tokenizer.mask_token
 
-        masks = np.where(feature_mask == 0)[0]
-
-        for mask in masks:
+        # sample new word for each word
+        masked_word = np.where(feature_mask == 0)[0]
+        for word_idx in masked_word:
             mod_sentence = " ".join(sentence_cp)
             words, probs = self.prob(mod_sentence)[0]
-            sentence_cp[mask] = np.random.choice(words, p=probs)
+            sentence_cp[word_idx] = np.random.choice(words, p=probs)
 
         feature_mask = sentence_cp == np.array(self.input_processed, dtype="|U80")
 
