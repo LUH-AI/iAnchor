@@ -48,7 +48,7 @@ class Anchor:
         task_specific: dict = None,
         method_specific: dict = None,
         num_coverage_samples: int = 10000,
-        epsilon: float = 0.15,
+        epsilon: float = 0.5,
         batch_size: int = 16,
         verbose=False,
         seed=69,

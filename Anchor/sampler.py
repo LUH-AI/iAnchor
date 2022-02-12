@@ -288,7 +288,7 @@ class TextSampler(Sampler):
         self.label = predict_fn([input])
         self.input_processed = [word.text for word in nlp_object(input)]
         self.num_features = len(self.input_processed)
-
+        self.test = {}
         self.predict_fn = predict_fn
 
         self.tokenizer = DistilBertTokenizer.from_pretrained("distilbert-base-cased")
@@ -306,8 +306,14 @@ class TextSampler(Sampler):
             )
 
     def prob(self, sentence):
+        if sentence in self.test:
+            return self.test[sentence]
+
         result = self.pred_topk_cbow(sentence)
-        return [(a, exp_normalize(b)) for a, b in result]
+        normalized_result = [(a, exp_normalize(b)) for a, b in result]
+
+        self.test[sentence] = normalized_result
+        return normalized_result
 
     def pred_topk_cbow(self, sentence):
         encoded_text = self.tokenizer.encode(sentence, add_special_tokens=True)

@@ -19,7 +19,7 @@ class KL_LUCB:
     """
 
     # default values from original paper
-    eps: float = 0.1
+    eps: float = 0.5
     delta: float = 0.1
     batch_size: int = 10
     verbose: bool = False
