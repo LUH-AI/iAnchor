@@ -277,7 +277,7 @@ class ImageSampler(Sampler):
             num_samples (int): Number of samples to be generated.
 
         Returns:
-            uple[AnchorCandidate, np.ndarray, np.ndarray]: Structure: [AnchorCandiate, coverage_mask, segmentations]
+            Tuple[AnchorCandidate, np.ndarray, np.ndarray]: Structure: [AnchorCandiate, coverage_mask, segmentations]
         """
         perturb_sample_idxs = np.random.choice(
             range(self.dataset.shape[0]), num_samples, replace=True
