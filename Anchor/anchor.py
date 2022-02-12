@@ -45,8 +45,8 @@ class Anchor:
         input: any,
         predict_fn: Callable[[any], np.array],
         method: str = "greedy",
-        task_specific: dict = dict(),
-        method_specific: dict = dict(),
+        task_specific: dict = None,
+        method_specific: dict = None,
         num_coverage_samples: int = 10000,
         epsilon: float = 0.15,
         batch_size: int = 16,
@@ -74,6 +74,13 @@ class Anchor:
 
         """
         np.random.seed(seed)
+
+        # in case args are empty
+        if task_specific is None:
+            task_specific = {}
+
+        if method_specific is None:
+            method_specific = {}
 
         self.kl_lucb = KL_LUCB(eps=epsilon, batch_size=batch_size, verbose=verbose)
         self.sampler = Sampler.create(self.tasktype, input, predict_fn, task_specific)
