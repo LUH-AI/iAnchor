@@ -288,12 +288,12 @@ class TextSampler(Sampler):
         self.label = predict_fn([input])
         self.input_processed = [word.text for word in nlp_object(input)]
         self.num_features = len(self.input_processed)
-        self.test = {}
         self.predict_fn = predict_fn
 
         self.tokenizer = DistilBertTokenizer.from_pretrained("distilbert-base-cased")
         self.bert = DistilBertForMaskedLM.from_pretrained("distilbert-base-cased")
 
+        self.prob_cache = {}
         self.pr = {}
         for i in range(len(self.input_processed)):
             words = np.array(self.input_processed, dtype="|U80")
@@ -306,13 +306,13 @@ class TextSampler(Sampler):
             )
 
     def prob(self, sentence):
-        if sentence in self.test:
-            return self.test[sentence]
+        if sentence in self.prob_cache:
+            return self.prob_cache[sentence]
 
         result = self.pred_topk_cbow(sentence)
         normalized_result = [(a, exp_normalize(b)) for a, b in result]
 
-        self.test[sentence] = normalized_result
+        self.prob_cache[sentence] = normalized_result
         return normalized_result
 
     def pred_topk_cbow(self, sentence):
