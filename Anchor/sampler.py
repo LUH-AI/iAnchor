@@ -278,10 +278,15 @@ class ImageSampler(Sampler):
 class TextSampler(Sampler):
     type: Tasktype = Tasktype.TEXT
 
-    def __init__(self, input: any, predict_fn: Callable[[any], np.array], **kwargs):
+    def __init__(
+        self, input: any, predict_fn: Callable[[any], np.array], nlp_object: None
+    ):
+
+        if nlp_object is None:
+            assert "Spacy object required for text anchor."
+
         self.label = predict_fn([input])
-        nlp = spacy.load("en_core_web_sm")
-        self.input_processed = [word.text for word in nlp(input)]
+        self.input_processed = [word.text for word in nlp_object(input)]
         self.num_features = len(self.input_processed)
 
         self.predict_fn = predict_fn
