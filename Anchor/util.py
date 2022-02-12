@@ -15,6 +15,19 @@ def tf_wrapper(func):
 
 
 def pytorch_wrapper(device=torch.device("cpu")):
+    """
+    Decorator that converts anchor image samples
+    (np.ndarray) to a Tensor and extracts the labels
+    (with argmax)
+
+    Use case: 
+        Adapter from Anchor Lib  -> predict_fn -> Anchor Lib
+
+    Args:
+        device ([type], optional): Pytorch device the model runs on. 
+                                    Defaults to torch.device("cpu").
+    """
+
     def _decorate(func):
         def wrapper(*args, **kwargs):
             x = torch.Tensor(args[0])
@@ -28,6 +41,20 @@ def pytorch_wrapper(device=torch.device("cpu")):
 
 
 def pytorch_image_wrapper(device=torch.device("cpu")):
+    """
+    Decorator that converts anchor image samples
+    (np.ndarray) to a Tensor and extracts the labels
+    (with argmax). Permuted the images to AxHxW before
+    passing it to the wrapped method.
+
+    Use case: 
+        Adapter from Anchor Lib  -> predict_fn -> Anchor Lib
+
+    Args:
+        device ([type], optional): Pytorch device the model runs on. 
+                                    Defaults to torch.device("cpu").
+    """
+
     def _decorate(func):
         def wrapper(x):
             x = torch.Tensor(x)

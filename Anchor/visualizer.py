@@ -43,6 +43,10 @@ class Visualizer:
 
 
 class ImageVisualizer(Visualizer):
+    """
+    Visalizer for image anchors.
+    """
+
     type: Tasktype = Tasktype.IMAGE
 
     def visualize(
@@ -59,13 +63,23 @@ class ImageVisualizer(Visualizer):
 
 
 class TextVisualizer(Visualizer):
+    """
+    Visalizer for text anchors.
+    """
+
     type: Tasktype = Tasktype.TEXT
 
-    def visualize(self, anchor: AnchorCandidate):
+    def visualize(
+        self, anchor: AnchorCandidate, original_instance: np.array, features: np.array
+    ):
         ...
 
 
 class TabularVisualizer(Visualizer):
+    """
+    Visalizer for tabular anchors.
+    """
+
     type: Tasktype = Tasktype.TABULAR
 
     def visualize(

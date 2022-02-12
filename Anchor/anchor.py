@@ -84,6 +84,7 @@ class Anchor:
 
         self.kl_lucb = KL_LUCB(eps=epsilon, batch_size=batch_size, verbose=verbose)
         self.sampler = Sampler.create(self.tasktype, input, predict_fn, task_specific)
+
         self.batch_size = batch_size
 
         logging.info(" Start Sampling")
@@ -104,6 +105,14 @@ class Anchor:
         return exp
 
     def visualize(self, anchor: AnchorCandidate, instance: np.ndarray):
+        """
+        Visualized the instance given the anchor.
+
+        Args:
+            anchor (AnchorCandidate): Anchor (usually result of explain_instance)
+            instance (np.ndarray): Instance that shall be explained by the anchor.
+        """
+
         return Visualizer.create(self.tasktype).visualize(
             anchor, instance, self.sampler.features
         )
@@ -137,6 +146,15 @@ class Anchor:
         return new_candidates
 
     def __calculate_coverage(self, anchor: AnchorCandidate) -> float:
+        """
+        Calculates the coverage for an given anchor.
+
+        Args:
+            anchor (AnchorCandidate): Anchor for which the coverage shall be calculated.
+
+        Returns:
+            float: Coverage
+        """
         included_samples = 0
         for mask in self.coverage_data:  # replace with numpy only
             # check if mask positive samples are included in the feature_mask of the anchor
@@ -189,8 +207,17 @@ class Anchor:
 
     def __beam_anchor(
         self, desired_confidence: float, beam_size: int,
-    ):
+    ) -> AnchorCandidate:
+        """
+        Beam search algorithm to find anchor.
 
+        Args:
+            desired_confidence (float): Desired confidence before stopping.
+            beam_size (int): Beam size
+
+        Returns:
+            AnchorCandidate: best found anchor
+        """
         max_anchor_size = self.sampler.num_features
         current_anchor_size = 1
         best_of_size = {0: []}  # A0
@@ -225,7 +252,17 @@ class Anchor:
 
         return best_candidate
 
-    def __smac_anchor(self, run_time):
+    def __smac_anchor(self, run_time: int) -> AnchorCandidate:
+        """
+        Utilites smac to find an anchor.
+
+        Args:
+            run_time (int): Amount of CPU-time to run the smac.
+
+        Returns:
+            AnchorCandidate: best found anchor
+        """
+
         # create config space
         configspace = ConfigurationSpace()
 
@@ -265,6 +302,7 @@ class Anchor:
         )
 
     def smac_optimize(self, config):
+        """ Main bayesian optimization loop for smac. """
         feature_mask = [int(f_idx) for f_idx, mv in config.items() if mv]
         # create candidate from config which is the feature mask to evaluate
         candidate = AnchorCandidate(feature_mask)
