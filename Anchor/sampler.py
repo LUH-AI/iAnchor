@@ -347,7 +347,7 @@ class TextSampler(Sampler):
 
         return self.__sample_pertubated_sentences(candidate, feature_masks, num_samples)
 
-    def __generate_sentance(self, feature_mask: np.ndarray) -> str:
+    def __generate_sentence(self, feature_mask: np.ndarray) -> str:
         # Generate new sentences by masking words according to the
         # feature mask. Then new words are samples. This is done
         # done word for word
@@ -370,7 +370,7 @@ class TextSampler(Sampler):
     def __sample_pertubated_sentences(
         self, candidate: AnchorCandidate, data: np.ndarray, num_samples: int,
     ) -> Tuple[AnchorCandidate, np.ndarray, np.ndarray]:
-        sentences = np.apply_along_axis(self.__generate_sentance, 1, data).reshape(
+        sentences = np.apply_along_axis(self.__generate_sentence, 1, data).reshape(
             -1, 1
         )
 
