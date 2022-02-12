@@ -278,9 +278,7 @@ class ImageSampler(Sampler):
 class TextSampler(Sampler):
     type: Tasktype = Tasktype.TEXT
 
-    def __init__(
-        self, input: any, predict_fn: Callable[[any], np.array], dataset: any, **kwargs
-    ):
+    def __init__(self, input: any, predict_fn: Callable[[any], np.array], **kwargs):
         self.label = predict_fn([input])
         nlp = spacy.load("en_core_web_sm")
         self.input_processed = [word.text for word in nlp(input)]

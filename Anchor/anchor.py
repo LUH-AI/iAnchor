@@ -136,7 +136,6 @@ class Anchor:
             if np.all(np.isin(anchor.feature_mask, np.where(mask == 1)), axis=0):
                 included_samples += 1
 
-        print("Included samples", included_samples)
         return included_samples / self.coverage_data.shape[0]
 
     def __check_valid_candidate(
@@ -162,7 +161,6 @@ class Anchor:
 
             ub = KL_LUCB.dup_bernoulli(prec, beta / nc.n_samples)
 
-        # print(lb, ub, prec)
         return prec >= dconf and lb > dconf - eps_stop
 
     def __greedy_anchor(
