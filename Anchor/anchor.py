@@ -49,6 +49,7 @@ class Anchor:
         method_specific: dict = None,
         num_coverage_samples: int = 10000,
         epsilon: float = 0.1,
+        delta: float = 0.1,
         batch_size: int = 16,
         verbose=False,
         seed=69,
@@ -86,7 +87,7 @@ class Anchor:
         self.sampler = Sampler.create(self.tasktype, input, predict_fn, task_specific)
 
         self.batch_size = batch_size
-
+        self.delta = delta
         logging.info(" Start Sampling")
         _, self.coverage_data, _ = self.sampler.sample(
             AnchorCandidate(feature_mask=[]), num_coverage_samples, False
@@ -202,9 +203,13 @@ class Anchor:
         anchor = self.kl_lucb.get_best_candidates(candidates, self.sampler, 1)[0]
 
         while not self.__check_valid_candidate(
-            anchor, 1, self.batch_size, desired_confidence
+            anchor, 1, self.batch_size, desired_confidence, self.delta
         ):
             candidates = self.generate_candidates([anchor], min_coverage)
+
+            if len(candidates) == 0:
+                break
+
             anchor = self.kl_lucb.get_best_candidates(candidates, self.sampler, 1)[0]
 
         return anchor
@@ -232,8 +237,10 @@ class Anchor:
             candidates = self.generate_candidates(
                 best_of_size[current_anchor_size - 1], best_candidate.coverage,
             )
+
             if len(candidates) == 0:
                 break
+
             best_candidates = self.kl_lucb.get_best_candidates(
                 candidates, self.sampler, min(beam_size, len(candidates))
             )
@@ -247,6 +254,7 @@ class Anchor:
                         beam_size=beam_size,
                         sample_count=self.batch_size,
                         dconf=desired_confidence,
+                        delta=self.delta,
                     )
                     and c.coverage > best_candidate.coverage
                 ):
