@@ -22,12 +22,96 @@
 <h1 class="title">Module <code>iml-ws21-projects-risingnumpygods.tests.test_kl_lucb</code></h1>
 </header>
 <section id="section-intro">
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">import pytest
+from Anchor.bandit import KL_LUCB
+
+
+def test_best_candidate():
+    ...
+
+
+def test_dup_bernoulli():
+    um = KL_LUCB.dup_bernoulli(0.2, 1)
+    assert um == 0.839887952608281
+
+
+def test_dlow_bernoulli():
+    lm = KL_LUCB.dlow_bernoulli(0.2, 1)
+    assert lm == 0.0005531907081604004
+
+
+def test_kl_bernoulli():
+    kl = KL_LUCB.kl_bernoulli(1, 0.2)
+    assert kl == 1.609437912434096</code></pre>
+</details>
 </section>
 <section>
 </section>
 <section>
 </section>
 <section>
+<h2 class="section-title" id="header-functions">Functions</h2>
+<dl>
+<dt id="iml-ws21-projects-risingnumpygods.tests.test_kl_lucb.test_best_candidate"><code class="name flex">
+<span>def <span class="ident">test_best_candidate</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def test_best_candidate():
+    ...</code></pre>
+</details>
+</dd>
+<dt id="iml-ws21-projects-risingnumpygods.tests.test_kl_lucb.test_dlow_bernoulli"><code class="name flex">
+<span>def <span class="ident">test_dlow_bernoulli</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def test_dlow_bernoulli():
+    lm = KL_LUCB.dlow_bernoulli(0.2, 1)
+    assert lm == 0.0005531907081604004</code></pre>
+</details>
+</dd>
+<dt id="iml-ws21-projects-risingnumpygods.tests.test_kl_lucb.test_dup_bernoulli"><code class="name flex">
+<span>def <span class="ident">test_dup_bernoulli</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def test_dup_bernoulli():
+    um = KL_LUCB.dup_bernoulli(0.2, 1)
+    assert um == 0.839887952608281</code></pre>
+</details>
+</dd>
+<dt id="iml-ws21-projects-risingnumpygods.tests.test_kl_lucb.test_kl_bernoulli"><code class="name flex">
+<span>def <span class="ident">test_kl_bernoulli</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def test_kl_bernoulli():
+    kl = KL_LUCB.kl_bernoulli(1, 0.2)
+    assert kl == 1.609437912434096</code></pre>
+</details>
+</dd>
+</dl>
 </section>
 <section>
 </section>
@@ -41,6 +125,14 @@
 <li><h3>Super-module</h3>
 <ul>
 <li><code><a title="iml-ws21-projects-risingnumpygods.tests" href="index.html">iml-ws21-projects-risingnumpygods.tests</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="">
+<li><code><a title="iml-ws21-projects-risingnumpygods.tests.test_kl_lucb.test_best_candidate" href="#iml-ws21-projects-risingnumpygods.tests.test_kl_lucb.test_best_candidate">test_best_candidate</a></code></li>
+<li><code><a title="iml-ws21-projects-risingnumpygods.tests.test_kl_lucb.test_dlow_bernoulli" href="#iml-ws21-projects-risingnumpygods.tests.test_kl_lucb.test_dlow_bernoulli">test_dlow_bernoulli</a></code></li>
+<li><code><a title="iml-ws21-projects-risingnumpygods.tests.test_kl_lucb.test_dup_bernoulli" href="#iml-ws21-projects-risingnumpygods.tests.test_kl_lucb.test_dup_bernoulli">test_dup_bernoulli</a></code></li>
+<li><code><a title="iml-ws21-projects-risingnumpygods.tests.test_kl_lucb.test_kl_bernoulli" href="#iml-ws21-projects-risingnumpygods.tests.test_kl_lucb.test_kl_bernoulli">test_kl_bernoulli</a></code></li>
 </ul>
 </li>
 </ul>
