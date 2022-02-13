@@ -367,9 +367,7 @@ class TextSampler(Sampler):
 
     type: Tasktype = Tasktype.TEXT
 
-    def __init__(
-        self, input: any, predict_fn: Callable[[any], np.array], nlp_object: any = None
-    ):
+    def __init__(self, input: any, predict_fn: Callable[[any], np.array]):
         """
         Initialises TextSampler with the given
         predict_fn, input, dataset and nlp_object
@@ -378,17 +376,12 @@ class TextSampler(Sampler):
         samples and the input.
 
         Args:
-            input (any): Tabular row that is to be explained.
+            input (list(str)): Sentences as list of tokens.
             predict_fn (Callable[[any], np.array]): Black box model predict function.
-            nlp_object: (any): Spacy pipeline to process input.
         """
-
-        if nlp_object is None:
-            assert "Spacy object required for text anchor."
-
-        self.label = predict_fn([input])
-        self.input_processed = [word.text for word in nlp_object(input)]
-        self.num_features = len(self.input_processed)
+        self.label = predict_fn([" ".join(input)])
+        self.input = input
+        self.num_features = len(self.input)
         self.predict_fn = predict_fn
 
         self.tokenizer = DistilBertTokenizer.from_pretrained("distilbert-base-cased")
@@ -401,16 +394,14 @@ class TextSampler(Sampler):
         self.prob_cache = {}
 
         # mask each word separetly and predict topk given its context
-        for i in range(len(self.input_processed)):
-            masked_sentence = self.input_processed.copy()
+        for i in range(len(self.input)):
+            masked_sentence = self.input.copy()
             masked_sentence[i] = self.tokenizer.mask_token
 
             sentence = " ".join(masked_sentence)
 
             w, p = self.prob(sentence)[0]
-            self.pr[self.input_processed[i]] = min(
-                0.5, dict(zip(w, p)).get(self.input_processed[i], 0.01)
-            )
+            self.pr[self.input[i]] = min(0.5, dict(zip(w, p)).get(self.input[i], 0.01))
 
     def prob(self, sentence: str):
         """
@@ -488,8 +479,8 @@ class TextSampler(Sampler):
             Tuple[AnchorCandidate, np.ndarray, np.ndarray]: Structure: [AnchorCandiate, coverage_mask, None]. In case 
             calculate_labels is False return [None, coverage_mask, None].
         """
-        feature_masks = np.zeros((num_samples, len(self.input_processed)))
-        for idx, word in enumerate(self.input_processed):
+        feature_masks = np.zeros((num_samples, len(self.input)))
+        for idx, word in enumerate(self.input):
             if idx in candidate.feature_mask:
                 continue
 
@@ -505,7 +496,7 @@ class TextSampler(Sampler):
         if not calculate_labels:
             return None, feature_masks, None
 
-        return self.__sample_pertubated_sentences(candidate, feature_masks)
+        return self.__sample_pertubated_sentences(candidate, feature_masks, num_samples)
 
     def __generate_sentence(self, feature_mask: np.ndarray) -> str:
         """
@@ -526,7 +517,7 @@ class TextSampler(Sampler):
         # done word for word
 
         # mask words given the feature mask
-        sentence_cp = np.array(self.input_processed, dtype="|U80")
+        sentence_cp = np.array(self.input, dtype="|U80")
         sentence_cp[feature_mask != 1] = self.tokenizer.mask_token
 
         # sample new word for each word
@@ -536,7 +527,7 @@ class TextSampler(Sampler):
             words, probs = self.prob(mod_sentence)[0]
             sentence_cp[word_idx] = np.random.choice(words, p=probs)
 
-        feature_mask = sentence_cp == np.array(self.input_processed, dtype="|U80")
+        feature_mask = sentence_cp == np.array(self.input, dtype="|U80")
 
         return " ".join(sentence_cp)
 

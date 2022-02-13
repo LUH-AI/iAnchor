@@ -113,9 +113,13 @@ class Anchor:
             instance (np.ndarray): Instance that shall be explained by the anchor.
         """
 
-        return Visualizer.create(self.tasktype).visualize(
-            anchor, instance, self.sampler.features
-        )
+        # as text sampler has no self.features
+        try:
+            features = self.sampler.features
+        except AttributeError:
+            features = None
+
+        return Visualizer.create(self.tasktype).visualize(anchor, instance, features)
 
     def generate_candidates(
         self, prev_anchors: list[AnchorCandidate], coverage_min: float

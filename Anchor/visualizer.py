@@ -72,7 +72,14 @@ class TextVisualizer(Visualizer):
     def visualize(
         self, anchor: AnchorCandidate, original_instance: np.array, features: np.array
     ):
-        ...
+        explanation = []
+        for i, word in enumerate(original_instance):
+            if i in anchor.feature_mask:
+                explanation.append("\033[93m" + word + "\033[0m")
+            else:
+                explanation.append(word)
+
+        return " ".join(explanation)
 
 
 class TabularVisualizer(Visualizer):
