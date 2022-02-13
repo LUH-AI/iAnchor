@@ -27,10 +27,12 @@
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">import matplotlib.pyplot as plt
+import numpy as np
 import pytest
 import torch
 import torchvision.transforms.functional as TF
-from Anchor.anchor import Sampler, Tasktype
+from Anchor.candidate import AnchorCandidate
+from Anchor.sampler import Sampler, Tasktype
 from PIL import Image
 from skimage.data import astronaut
 from skimage.segmentation import mark_boundaries, quickshift
@@ -51,14 +53,19 @@ def setup():
 def test_image_sampler():
     image = torch.Tensor(img_as_float(astronaut()[::2, ::2]))
     sampler = Sampler().create(Tasktype.IMAGE, image, pytest.predict_fn)
-    segments, sample, labels = sampler.sample([], 3)
+    candidate = AnchorCandidate(torch.arange(sampler._n_features))
+    candidate, data, segments = sampler.sample(candidate, 3)
 
+    print(image.shape)
+
+    assert candidate.n_samples == 3
+    assert candidate.precision == 1
     assert (
-        len(torch.unique(segments)) == 44
+        len(np.unique(segments)) == 44
     )  # dependent on segmentation method and hyperparameters
 
     fig = plt.figure()
-    plt.imshow(mark_boundaries(image, segments.numpy()))
+    plt.imshow(mark_boundaries(image, segments))
     plt.show()</code></pre>
 </details>
 </section>
@@ -96,14 +103,19 @@ def setup():
 <pre><code class="python">def test_image_sampler():
     image = torch.Tensor(img_as_float(astronaut()[::2, ::2]))
     sampler = Sampler().create(Tasktype.IMAGE, image, pytest.predict_fn)
-    segments, sample, labels = sampler.sample([], 3)
+    candidate = AnchorCandidate(torch.arange(sampler._n_features))
+    candidate, data, segments = sampler.sample(candidate, 3)
 
+    print(image.shape)
+
+    assert candidate.n_samples == 3
+    assert candidate.precision == 1
     assert (
-        len(torch.unique(segments)) == 44
+        len(np.unique(segments)) == 44
     )  # dependent on segmentation method and hyperparameters
 
     fig = plt.figure()
-    plt.imshow(mark_boundaries(image, segments.numpy()))
+    plt.imshow(mark_boundaries(image, segments))
     plt.show()</code></pre>
 </details>
 </dd>

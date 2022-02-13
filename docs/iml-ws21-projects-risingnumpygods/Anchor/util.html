@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
 <meta name="generator" content="pdoc 0.10.0" />
-<title>iml-ws21-projects-risingnumpygods.Anchor.kl-lucb API documentation</title>
+<title>iml-ws21-projects-risingnumpygods.Anchor.util API documentation</title>
 <meta name="description" content="" />
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
@@ -19,32 +19,80 @@
 <main>
 <article id="content">
 <header>
-<h1 class="title">Module <code>iml-ws21-projects-risingnumpygods.Anchor.kl-lucb</code></h1>
+<h1 class="title">Module <code>iml-ws21-projects-risingnumpygods.Anchor.util</code></h1>
 </header>
 <section id="section-intro">
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">from dataclasses import dataclass, field
-from typing import Callable
+<pre><code class="python">import numpy as np
+import tensorflow as tf
+import torch
 
 
-@dataclass(frozen=True)
-class KL_LUCB:
+def tf_wrapper(func):
+    def wrapper(*args, **kwargs):
+        x = tf.convert_to_tensor(args[0])
+        y_proba = func(x).numpy()
+        func(*args, **kwargs)
+
+        return np.argmax(y_proba, dim=1)
+
+    return wrapper
+
+
+def pytorch_wrapper(device=torch.device(&#34;cpu&#34;)):
     &#34;&#34;&#34;
-    Multi armed bandit with lower and upper bound.
-    Used to find the anchor rule with the highest precision.
+    Decorator that converts anchor image samples
+    (np.ndarray) to a Tensor and extracts the labels
+    (with argmax)
+
+    Use case: 
+        Adapter from Anchor Lib  -&gt; predict_fn -&gt; Anchor Lib
+
+    Args:
+        device ([type], optional): Pytorch device the model runs on. 
+                                    Defaults to torch.device(&#34;cpu&#34;).
     &#34;&#34;&#34;
 
-    eps: float = field()
-    delta: float = field()
-    batch_size: int = field()
-    verbose: bool = field()
+    def _decorate(func):
+        def wrapper(*args, **kwargs):
+            x = torch.Tensor(args[0])
+            x = x.to(device)
+            y = func(x).cpu().detach().numpy()
+            return np.argmax(y, axis=1)
 
-    # TODO: fix type annotations
-    def get_best_candidates(samples: list, top_n: int = 1):
-        ...</code></pre>
+        return wrapper
+
+    return _decorate
+
+
+def pytorch_image_wrapper(device=torch.device(&#34;cpu&#34;)):
+    &#34;&#34;&#34;
+    Decorator that converts anchor image samples
+    (np.ndarray) to a Tensor and extracts the labels
+    (with argmax). Permuted the images to AxHxW before
+    passing it to the wrapped method.
+
+    Use case: 
+        Adapter from Anchor Lib  -&gt; predict_fn -&gt; Anchor Lib
+
+    Args:
+        device ([type], optional): Pytorch device the model runs on. 
+                                    Defaults to torch.device(&#34;cpu&#34;).
+    &#34;&#34;&#34;
+
+    def _decorate(func):
+        def wrapper(x):
+            x = torch.Tensor(x)
+            x = x.to(device)
+            y = func(x.permute(0, 3, 1, 2)).cpu().detach().numpy()
+            return np.argmax(y, axis=1)
+
+        return wrapper
+
+    return _decorate</code></pre>
 </details>
 </section>
 <section>
@@ -52,60 +100,104 @@ class KL_LUCB:
 <section>
 </section>
 <section>
-</section>
-<section>
-<h2 class="section-title" id="header-classes">Classes</h2>
+<h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
-<dt id="iml-ws21-projects-risingnumpygods.Anchor.kl-lucb.KL_LUCB"><code class="flex name class">
-<span>class <span class="ident">KL_LUCB</span></span>
-<span>(</span><span>eps: float, delta: float, batch_size: int, verbose: bool)</span>
+<dt id="iml-ws21-projects-risingnumpygods.Anchor.util.pytorch_image_wrapper"><code class="name flex">
+<span>def <span class="ident">pytorch_image_wrapper</span></span>(<span>device=device(type='cpu'))</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Multi armed bandit with lower and upper bound.
-Used to find the anchor rule with the highest precision.</p></div>
+<div class="desc"><p>Decorator that converts anchor image samples
+(np.ndarray) to a Tensor and extracts the labels
+(with argmax). Permuted the images to AxHxW before
+passing it to the wrapped method.</p>
+<p>Use case:
+Adapter from Anchor Lib
+-&gt; predict_fn -&gt; Anchor Lib</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>device</code></strong> :&ensp;<code>[type]</code>, optional</dt>
+<dd>Pytorch device the model runs on.
+Defaults to torch.device("cpu").</dd>
+</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">@dataclass(frozen=True)
-class KL_LUCB:
+<pre><code class="python">def pytorch_image_wrapper(device=torch.device(&#34;cpu&#34;)):
     &#34;&#34;&#34;
-    Multi armed bandit with lower and upper bound.
-    Used to find the anchor rule with the highest precision.
+    Decorator that converts anchor image samples
+    (np.ndarray) to a Tensor and extracts the labels
+    (with argmax). Permuted the images to AxHxW before
+    passing it to the wrapped method.
+
+    Use case: 
+        Adapter from Anchor Lib  -&gt; predict_fn -&gt; Anchor Lib
+
+    Args:
+        device ([type], optional): Pytorch device the model runs on. 
+                                    Defaults to torch.device(&#34;cpu&#34;).
     &#34;&#34;&#34;
 
-    eps: float = field()
-    delta: float = field()
-    batch_size: int = field()
-    verbose: bool = field()
+    def _decorate(func):
+        def wrapper(x):
+            x = torch.Tensor(x)
+            x = x.to(device)
+            y = func(x.permute(0, 3, 1, 2)).cpu().detach().numpy()
+            return np.argmax(y, axis=1)
 
-    # TODO: fix type annotations
-    def get_best_candidates(samples: list, top_n: int = 1):
-        ...</code></pre>
+        return wrapper
+
+    return _decorate</code></pre>
 </details>
-<h3>Class variables</h3>
+</dd>
+<dt id="iml-ws21-projects-risingnumpygods.Anchor.util.pytorch_wrapper"><code class="name flex">
+<span>def <span class="ident">pytorch_wrapper</span></span>(<span>device=device(type='cpu'))</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Decorator that converts anchor image samples
+(np.ndarray) to a Tensor and extracts the labels
+(with argmax)</p>
+<p>Use case:
+Adapter from Anchor Lib
+-&gt; predict_fn -&gt; Anchor Lib</p>
+<h2 id="args">Args</h2>
 <dl>
-<dt id="iml-ws21-projects-risingnumpygods.Anchor.kl-lucb.KL_LUCB.batch_size"><code class="name">var <span class="ident">batch_size</span> : int</code></dt>
-<dd>
-<div class="desc"></div>
+<dt><strong><code>device</code></strong> :&ensp;<code>[type]</code>, optional</dt>
+<dd>Pytorch device the model runs on.
+Defaults to torch.device("cpu").</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def pytorch_wrapper(device=torch.device(&#34;cpu&#34;)):
+    &#34;&#34;&#34;
+    Decorator that converts anchor image samples
+    (np.ndarray) to a Tensor and extracts the labels
+    (with argmax)
+
+    Use case: 
+        Adapter from Anchor Lib  -&gt; predict_fn -&gt; Anchor Lib
+
+    Args:
+        device ([type], optional): Pytorch device the model runs on. 
+                                    Defaults to torch.device(&#34;cpu&#34;).
+    &#34;&#34;&#34;
+
+    def _decorate(func):
+        def wrapper(*args, **kwargs):
+            x = torch.Tensor(args[0])
+            x = x.to(device)
+            y = func(x).cpu().detach().numpy()
+            return np.argmax(y, axis=1)
+
+        return wrapper
+
+    return _decorate</code></pre>
+</details>
 </dd>
-<dt id="iml-ws21-projects-risingnumpygods.Anchor.kl-lucb.KL_LUCB.delta"><code class="name">var <span class="ident">delta</span> : float</code></dt>
-<dd>
-<div class="desc"></div>
-</dd>
-<dt id="iml-ws21-projects-risingnumpygods.Anchor.kl-lucb.KL_LUCB.eps"><code class="name">var <span class="ident">eps</span> : float</code></dt>
-<dd>
-<div class="desc"></div>
-</dd>
-<dt id="iml-ws21-projects-risingnumpygods.Anchor.kl-lucb.KL_LUCB.verbose"><code class="name">var <span class="ident">verbose</span> : bool</code></dt>
-<dd>
-<div class="desc"></div>
-</dd>
-</dl>
-<h3>Methods</h3>
-<dl>
-<dt id="iml-ws21-projects-risingnumpygods.Anchor.kl-lucb.KL_LUCB.get_best_candidates"><code class="name flex">
-<span>def <span class="ident">get_best_candidates</span></span>(<span>samples: list, top_n: int = 1)</span>
+<dt id="iml-ws21-projects-risingnumpygods.Anchor.util.tf_wrapper"><code class="name flex">
+<span>def <span class="ident">tf_wrapper</span></span>(<span>func)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -113,13 +205,20 @@ class KL_LUCB:
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def get_best_candidates(samples: list, top_n: int = 1):
-    ...</code></pre>
+<pre><code class="python">def tf_wrapper(func):
+    def wrapper(*args, **kwargs):
+        x = tf.convert_to_tensor(args[0])
+        y_proba = func(x).numpy()
+        func(*args, **kwargs)
+
+        return np.argmax(y_proba, dim=1)
+
+    return wrapper</code></pre>
 </details>
 </dd>
 </dl>
-</dd>
-</dl>
+</section>
+<section>
 </section>
 </article>
 <nav id="sidebar">
@@ -133,18 +232,11 @@ class KL_LUCB:
 <li><code><a title="iml-ws21-projects-risingnumpygods.Anchor" href="index.html">iml-ws21-projects-risingnumpygods.Anchor</a></code></li>
 </ul>
 </li>
-<li><h3><a href="#header-classes">Classes</a></h3>
-<ul>
-<li>
-<h4><code><a title="iml-ws21-projects-risingnumpygods.Anchor.kl-lucb.KL_LUCB" href="#iml-ws21-projects-risingnumpygods.Anchor.kl-lucb.KL_LUCB">KL_LUCB</a></code></h4>
+<li><h3><a href="#header-functions">Functions</a></h3>
 <ul class="">
-<li><code><a title="iml-ws21-projects-risingnumpygods.Anchor.kl-lucb.KL_LUCB.batch_size" href="#iml-ws21-projects-risingnumpygods.Anchor.kl-lucb.KL_LUCB.batch_size">batch_size</a></code></li>
-<li><code><a title="iml-ws21-projects-risingnumpygods.Anchor.kl-lucb.KL_LUCB.delta" href="#iml-ws21-projects-risingnumpygods.Anchor.kl-lucb.KL_LUCB.delta">delta</a></code></li>
-<li><code><a title="iml-ws21-projects-risingnumpygods.Anchor.kl-lucb.KL_LUCB.eps" href="#iml-ws21-projects-risingnumpygods.Anchor.kl-lucb.KL_LUCB.eps">eps</a></code></li>
-<li><code><a title="iml-ws21-projects-risingnumpygods.Anchor.kl-lucb.KL_LUCB.get_best_candidates" href="#iml-ws21-projects-risingnumpygods.Anchor.kl-lucb.KL_LUCB.get_best_candidates">get_best_candidates</a></code></li>
-<li><code><a title="iml-ws21-projects-risingnumpygods.Anchor.kl-lucb.KL_LUCB.verbose" href="#iml-ws21-projects-risingnumpygods.Anchor.kl-lucb.KL_LUCB.verbose">verbose</a></code></li>
-</ul>
-</li>
+<li><code><a title="iml-ws21-projects-risingnumpygods.Anchor.util.pytorch_image_wrapper" href="#iml-ws21-projects-risingnumpygods.Anchor.util.pytorch_image_wrapper">pytorch_image_wrapper</a></code></li>
+<li><code><a title="iml-ws21-projects-risingnumpygods.Anchor.util.pytorch_wrapper" href="#iml-ws21-projects-risingnumpygods.Anchor.util.pytorch_wrapper">pytorch_wrapper</a></code></li>
+<li><code><a title="iml-ws21-projects-risingnumpygods.Anchor.util.tf_wrapper" href="#iml-ws21-projects-risingnumpygods.Anchor.util.tf_wrapper">tf_wrapper</a></code></li>
 </ul>
 </li>
 </ul>

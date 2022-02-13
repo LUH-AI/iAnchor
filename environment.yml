@@ -1,4 +1,4 @@
-name: IML-Anchors
+name: iAnchor
 channels:
   - pytorch
   - defaults
@@ -10,10 +10,12 @@ dependencies:
   - pytest
   - black
   - scikit-image
-  - torchvision 
+  - torchvision
   - pip
   - pip:
       - pdoc3
       - smac
       - ConfigSpace
       - tensorflow
+      - transformers
+      - spacy
