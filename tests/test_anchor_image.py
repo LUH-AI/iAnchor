@@ -64,7 +64,7 @@ def test_image_sampler():
 def test_image_greedy_search():
     explainer = Anchor(Tasktype.IMAGE)
 
-    method_paras = {"desired_confidence": 1.0}
+    method_paras = {"desired_confidence": 0.8}
     anchor = explainer.explain_instance(
         pytest.input.squeeze().permute(1, 2, 0),
         predict_fn=pytest.predict_fn,
@@ -73,14 +73,14 @@ def test_image_greedy_search():
         num_coverage_samples=1000,
     )
 
-    assert anchor.feature_mask == [11, 19]
-    assert anchor.precision == 1.0
+    assert anchor.feature_mask == [19]
+    assert anchor.precision >= 0.8
 
 
 def test_image_beam_search():
     explainer = Anchor(Tasktype.IMAGE)
 
-    method_paras = {"beam_size": 2, "desired_confidence": 1.0}
+    method_paras = {"beam_size": 2, "desired_confidence": 0.8}
     anchor = explainer.explain_instance(
         pytest.input.squeeze().permute(1, 2, 0),
         predict_fn=pytest.predict_fn,
@@ -89,5 +89,5 @@ def test_image_beam_search():
         num_coverage_samples=1000,
     )
 
-    assert anchor.feature_mask == [11, 19]
-    assert anchor.precision == 1.0
+    assert anchor.feature_mask == [11, 4]
+    assert anchor.precision >= 0.8
