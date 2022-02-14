@@ -4,6 +4,9 @@ import torch
 
 
 def tf_wrapper(func):
+    """
+    Should not be used in current state, since not tested
+    """
     def wrapper(*args, **kwargs):
         x = tf.convert_to_tensor(args[0])
         y_proba = func(x).numpy()

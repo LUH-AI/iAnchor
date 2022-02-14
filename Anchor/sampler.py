@@ -2,17 +2,15 @@ import logging
 from dataclasses import dataclass, field
 from enum import Enum, auto
 from typing import Callable, Optional, Protocol, Tuple, Union
-from transformers import DistilBertTokenizer, DistilBertForMaskedLM
-import torch
 
 import matplotlib.pyplot as plt
 import numpy as np
+import spacy
 import torch
 from skimage.segmentation import quickshift
+from transformers import DistilBertForMaskedLM, DistilBertTokenizer
 
 from .candidate import AnchorCandidate
-import matplotlib.pyplot as plt
-import spacy
 
 
 def exp_normalize(x):
@@ -75,8 +73,8 @@ class Sampler:
 
 class TabularSampler(Sampler):
     """
-    TabularSampler generates new tabular instances 
-    given an AnchorCandidate by fixiating the 
+    TabularSampler generates new tabular instances
+    given an AnchorCandidate by fixiating the
     candidates features and sampling random values
     within the dataset.
     """
@@ -94,13 +92,13 @@ class TabularSampler(Sampler):
         Initialises TabularSampler with the given
         predict_fn, input, dataset and column names.
 
-        Predict_fn will be used to predict all the 
+        Predict_fn will be used to predict all the
         samples and the input.
 
         Args:
             input (any): Tabular row that is to be explained.
             predict_fn (Callable[[any], np.array]): Black box model predict function.
-            dataset (any): Tabular dataset from which samples will be collected.
+            dataset (any): Tabular dataset from which samples will be collected. Expected to be discretized.
             column_names (list): Columns names of the dataset.
         """
 
@@ -125,21 +123,21 @@ class TabularSampler(Sampler):
         candidate: AnchorCandidate,
         num_samples: int,
         calculate_labels: bool = True,
-    ) -> Tuple[AnchorCandidate, np.ndarray, np.ndarray]:
+    ) -> Tuple[AnchorCandidate, np.ndarray]:
         """
         Generates num_samples samples by choosing random values
-        out of self.dataset and setting the self.input features 
+        out of self.dataset and setting the self.input features
         that are withing the candidates feature mask.
 
         Args:
             candidate (AnchorCandidate): AnchorCandiate which contains the features to be fixated.
             num_samples (int): Number of samples that shall be generated.
-            calculate_labels (bool, optional): When true label of the samples will predicted. In that case the 
+            calculate_labels (bool, optional): When true label of the samples will predicted. In that case the
             candiates precision will be updated. Defaults to True.
 
         Returns:
-            Tuple[AnchorCandidate, np.ndarray, np.ndarray]: Structure: [AnchorCandiate, coverage_mask, None]. In case 
-            calculate_labels is False return [None, coverage_mask, None].
+            Tuple[AnchorCandidate, np.ndarray]: Structure: [AnchorCandiate, coverage_mask]. In case
+            calculate_labels is False return [None, coverage_mask].
         """
 
         if self.dataset.shape[0] > num_samples:
@@ -158,17 +156,16 @@ class TabularSampler(Sampler):
         masks = (samples[:, :] != self.input).astype(int)
 
         if not calculate_labels:
-            return None, masks, None
+            return None, masks
 
         # predict samples
         preds = self.predict_fn(samples)
-
         labels = (preds == self.label).astype(int)
 
         # update candidate
         candidate.update_precision(np.sum(labels), num_samples)
 
-        return candidate, masks, None  # TODO remove third return variable
+        return candidate, masks
 
 
 class ImageSampler(Sampler):
@@ -189,7 +186,7 @@ class ImageSampler(Sampler):
         Initialises ImageSampler with the given
         predict_fn, input and image dataset.
 
-        Predict_fn will be used to predict all the 
+        Predict_fn will be used to predict all the
         samples and the input.
 
         When dataset equals None samples are generated
@@ -214,7 +211,7 @@ class ImageSampler(Sampler):
 
         # parameters from original implementation
         segment_features = np.unique(self.features)
-        self._n_features = len(segment_features)
+        self.num_features = len(segment_features)
 
         # create superpixel image by replacing superpixels by its mean in the original image
         self.sp_image = np.copy(input)
@@ -232,34 +229,35 @@ class ImageSampler(Sampler):
         candidate: AnchorCandidate,
         num_samples: int,
         calculate_labels: bool = True,
-    ) -> Tuple[AnchorCandidate, np.ndarray, np.ndarray]:
+    ) -> Tuple[AnchorCandidate, np.ndarray]:
         """
         Generates num_samples samples by choosing random values
-        out of self.dataset and setting the self.input features 
+        out of self.dataset and setting the self.input features
         that are withing the candidates feature mask.
 
-        When dataset is None then samples are generated by 
+        When dataset is None then samples are generated by
         utilizing the mean superpixel else the image datset
         is sampled
 
         Args:
             candidate (AnchorCandidate): AnchorCandiate which contains the features to be fixated.
             num_samples (int): Number of samples that shall be generated.
-            calculate_labels (bool, optional): When true label of the samples will predicted. In that case the 
-            candiates precision will be updated. Defaults to True.
+            calculate_labels (bool, optional): When true label of the samples will predicted. In that case the
+                candiates precision will be updated. Defaults to True.
 
         Returns:
-            Tuple[AnchorCandidate, np.ndarray, np.ndarray]: Structure: [AnchorCandiate, coverage_mask, segmentations]. In case 
-            calculate_labels is False return [None, coverage_mask, None].
+            Tuple[AnchorCandidate, np.ndarray]: Structure: [AnchorCandiate, coverage_mask]. In case
+            calculate_labels is False return [None, coverage_mask].
         """
         data = np.random.randint(
-            0, 2, size=(num_samples, self._n_features)
+            0, 2, size=(num_samples, self.num_features)
         )  # generate random feature mask for each sample
         data[:, candidate.feature_mask] = 1  # set present features to one
 
         if not calculate_labels:
-            return None, data, None
+            return None, data
 
+        # generate either samples from the dataset or mean superpixel
         if self.dataset is not None:
             return self.sample_dataset(candidate, data, num_samples)
         else:
@@ -267,22 +265,23 @@ class ImageSampler(Sampler):
 
     def sample_dataset(
         self, candidate: AnchorCandidate, data: np.ndarray, num_samples: int,
-    ) -> Tuple[AnchorCandidate, np.ndarray, np.ndarray]:
+    ) -> Tuple[AnchorCandidate, np.ndarray]:
         """
         Samples num_samples samples by utilising the image dataset.
 
         Args:
-            candidate (AnchorCandidate): AnchorCandiate that shall be evaluted
+            candidate (AnchorCandidate): AnchorCandidate which precision will be updated.
             data (np.ndarray): Features masks
             num_samples (int): Number of samples to be generated.
 
         Returns:
-            Tuple[AnchorCandidate, np.ndarray, np.ndarray]: Structure: [AnchorCandiate, coverage_mask, segmentations]
+            Tuple[AnchorCandidate, np.ndarray]: Structure: [AnchorCandiate, coverage_mask]
         """
         perturb_sample_idxs = np.random.choice(
             range(self.dataset.shape[0]), num_samples, replace=True
         )
 
+        # generate samples from the dataset
         samples = np.stack(
             [
                 self.__generate_image(mask, self.dataset[pidx])
@@ -291,77 +290,78 @@ class ImageSampler(Sampler):
             axis=0,
         )
 
+        # predict samples
         preds = self.predict_fn(samples)
         labels = (preds == self.label).astype(int)
 
-        # update candidate
+        # update candidate prec
         candidate.update_precision(np.sum(labels), num_samples)
 
-        return candidate, data, self.features
+        return candidate, data
 
     def sample_mean_superpixel(
         self, candidate: AnchorCandidate, data: np.ndarray, num_samples: int,
-    ) -> Tuple[AnchorCandidate, np.ndarray, np.ndarray]:
+    ) -> Tuple[AnchorCandidate, np.ndarray]:
         """
         Sample function for image data.
         Generates random image samples from the distribution around the original image.
 
         Args:
-            candidate (AnchorCandidate)
-            num_samples (int)
+            candidate (AnchorCandidate): AnchorCandidate which precision will be updated.
+            data (np.ndarray): Generated feature mask.
+            num_samples (int): Number of samples to be generated.
+
         Returns:
-            candidate (AnchorCandidate)
+            Tuple[AnchorCandidate, np.ndarray]: Returns the AnchorCandiate and the feature masks.
         """
-        samples = np.stack(
-            [self.__generate_image(mask, self.sp_image) for mask in data], axis=0
-        )
+        # Sample function for image data.
+        # Generates random image samples from the distribution around the original image.
 
+        # Args:
+        #     candidate (AnchorCandidate)
+        #     num_samples (int)
+        # Returns:
+        #     candidate (AnchorCandidate)
+        # """
+        samples = np.stack([self.__generate_image(mask) for mask in data], axis=0)
+
+        # predict labels
         preds = self.predict_fn(samples)
-
-        # assert isinstance(
-        #     preds, np.ndarray
-        # ), "Result of your predict function should be of type numpy.ndarray"
-
         labels = (preds == self.label).astype(int)
 
         # update candidate
         candidate.update_precision(np.sum(labels), num_samples)
 
-        return candidate, data, self.features  # TODO remove third return variable
+        return candidate, data
 
-    def __generate_image(
-        self, feature_mask: np.ndarray, perturb_image: np.ndarray
-    ) -> np.array:
+    def __generate_image(self, feature_mask: np.ndarray) -> np.array:
         """
         Generate sample image given some feature mask.
         The true image will get permutated dependent on the feature mask.
         Pixel which are outmasked by the mask are replaced by the corresponding superpixel pixel.
 
         Args:
-            feature_mask: np.ndarray
+            feature_mask (np.ndarray): Feature mask to generate picture with 
+
         Returns:
-            permutated image: np.array
+            np.array: Generated image.
         """
         img = self.image.copy()
         zeros = np.where(feature_mask == 0)[0]
         mask = np.zeros(self.features.shape).astype(bool)
         for z in zeros:
             mask[self.features == z] = True
-        img[mask] = perturb_image[mask]
+        img[mask] = self.sp_image[mask]
 
         return img
-
-    @property
-    def num_features(self):
-        return self._n_features
 
 
 class TextSampler(Sampler):
     """
-    TextSampler generates new text instances 
-    given an AnchorCandidate by fixiating the 
-    candidates features and replacing masked 
-    words with alternatives given from bert 
+    TextSampler generates new text instances
+    given an AnchorCandidate by fixiating the
+    candidates features and replacing masked
+    words with alternatives given from bert
     model.
     """
 
@@ -372,7 +372,7 @@ class TextSampler(Sampler):
         Initialises TextSampler with the given
         predict_fn, input, dataset and nlp_object
 
-        Predict_fn will be used to predict all the 
+        Predict_fn will be used to predict all the
         samples and the input.
 
         Args:
@@ -406,7 +406,7 @@ class TextSampler(Sampler):
     def prob(self, sentence: str):
         """
         Given a senteces with masked tokens predicts
-        the cbow (word alternatives, exp normalized 
+        the cbow (word alternatives, exp normalized
         probabilites) for each word.
 
         Args:
@@ -427,7 +427,7 @@ class TextSampler(Sampler):
 
     def pred_topk_cbow(self, sentence):
         """
-        Give a sentences with masked tokens predict 
+        Give a sentences with masked tokens predict
         alternative words (and the corresponding probabilities)
         via bert.
 
@@ -463,20 +463,20 @@ class TextSampler(Sampler):
         candidate: AnchorCandidate,
         num_samples: int,
         calculate_labels: bool = True,
-    ) -> Tuple[AnchorCandidate, np.ndarray, np.ndarray]:
+    ) -> Tuple[AnchorCandidate, np.ndarray]:
         """
-        Generates num_samples samples by choosing if words 
+        Generates num_samples samples by choosing if words
         that are not within the candiates feature mask should
         be masked given their original probability (self.pr).
 
         Args:
             candidate (AnchorCandidate): AnchorCandiate which contains the features to be fixated.
             num_samples (int): Number of samples that shall be generated.
-            calculate_labels (bool, optional): When true label of the samples will predicted. In that case the 
+            calculate_labels (bool, optional): When true label of the samples will predicted. In that case the
             candiates precision will be updated. Defaults to True.
 
         Returns:
-            Tuple[AnchorCandidate, np.ndarray, np.ndarray]: Structure: [AnchorCandiate, coverage_mask, None]. In case 
+            Tuple[AnchorCandidate, np.ndarray, np.ndarray]: Structure: [AnchorCandiate, coverage_mask, None]. In case
             calculate_labels is False return [None, coverage_mask, None].
         """
         feature_masks = np.zeros((num_samples, len(self.input)))
@@ -494,7 +494,7 @@ class TextSampler(Sampler):
         feature_masks[:, candidate.feature_mask] = 1
 
         if not calculate_labels:
-            return None, feature_masks, None
+            return None, feature_masks
 
         return self.__sample_pertubated_sentences(candidate, feature_masks, num_samples)
 
@@ -506,7 +506,7 @@ class TextSampler(Sampler):
         more coherent sentences.
 
         Args:
-            feature_mask (np.ndarray): Features mask where != 1 denotes 
+            feature_mask (np.ndarray): Features mask where != 1 denotes
                                         that a word shall be masked
 
         Returns:
@@ -540,7 +540,7 @@ class TextSampler(Sampler):
         candidate.
 
         Args:
-            candidate (AnchorCandidate): Candidate for which the samples will be generated for. 
+            candidate (AnchorCandidate): Candidate for which the samples will be generated for.
                                             This candiates precisision will be updated in the process.
             data (np.ndarray): Several feature_masks. For each mask a new sentence will be generated.
             num_samples (int): Number of samples. Used to calculate the precision.
@@ -558,4 +558,4 @@ class TextSampler(Sampler):
 
         # update candidate
         candidate.update_precision(np.sum(labels), num_samples)
-        return candidate, data, None
+        return candidate, data

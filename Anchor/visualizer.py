@@ -52,6 +52,18 @@ class ImageVisualizer(Visualizer):
     def visualize(
         self, anchor: AnchorCandidate, original_instance: np.array, features: np.array
     ):
+        """
+        Visualizes the image anchor
+
+        Args:
+            anchor (AnchorCandidate): AnchorCandiate which feature masks is used to explain the instance.
+            original_instance (np.array): (M, N[, 3]) image that is going to explained.
+            features (np.array): Segments of the original image.
+
+        Returns:
+            (np.ndarray): (M, N, 3) array of floats. 
+            An image in which the boundaries between labels are superimposed on the original image.
+        """
         idxs = np.argwhere(~np.isin(features, anchor.feature_mask))
         mask = features.copy()
         mask[idxs[:, 0], idxs[:, 1]] = 0
@@ -64,14 +76,23 @@ class ImageVisualizer(Visualizer):
 
 class TextVisualizer(Visualizer):
     """
-    Visalizer for text anchors.
+    Visualizer for text anchors. 
     """
 
     type: Tasktype = Tasktype.TEXT
 
-    def visualize(
-        self, anchor: AnchorCandidate, original_instance: np.array, features: np.array
-    ):
+    def visualize(self, anchor: AnchorCandidate, original_instance: str, features: any):
+        """
+        Visualizes the text anchor.
+
+        Args:
+            anchor (AnchorCandidate): AnchorCandiate which feature masks is used to explain the instance
+            original_instance (str): Text to be explained
+            features (np.array): Unused
+
+        Returns:
+            (str): Returns the orignial sentence with the importants words marked in yellow. 
+        """
         explanation = []
         for i, word in enumerate(original_instance):
             if i in anchor.feature_mask:
@@ -92,6 +113,18 @@ class TabularVisualizer(Visualizer):
     def visualize(
         self, anchor: AnchorCandidate, original_instance: np.array, features: np.array
     ):
+        """
+        Visualizes the tabular anchor.
+
+        Args:
+            anchor (AnchorCandidate): AnchorCandiate which feature masks is used to explain the instance
+            original_instance (str): Tabular instance (row) that is to be explained.
+            features (np.array): Columns names of the dataset.
+
+        Returns:
+            (str): Returns the orignial sentence with the importants words marked in yellow. 
+        """
+
         exp_visu = [
             f"{k} = {v}"
             for i, (k, v) in enumerate(zip(features, original_instance))

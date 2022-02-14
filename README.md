@@ -6,15 +6,16 @@
   </a>
 </div>
 
+#
 
 <!-- ABOUT THE PROJECT -->
 ## About The Project
-An interpretable and easy to understand python version of the Anchor explanation method from [Anchors: High-Precision Model-Agnostic Explanations](https://homes.cs.washington.edu/~marcotcr/aaai18.pdf). Our implementation is inspired by [this code](https://github.com/marcotcr/anchor). Furthermore it supports optimization with the SMAC optimizer besides KL-divergence. The code is unit tested and the tests can be run with pytest.
+An interpretable and easy-to-understand python version of the Anchor explanation method from [Anchors: High-Precision Model-Agnostic Explanations](https://homes.cs.washington.edu/~marcotcr/aaai18.pdf). Our implementation is inspired by [this code](https://github.com/marcotcr/anchor). Furthermore, it supports optimization with the SMAC optimizer besides KL-divergence. The code is unit tested and the tests can be run with pytest.
 
 
 <!-- GETTING STARTED -->
 ## Getting Started
-This section describes how to get started explaining your own black box models.
+This section describes how to get started explaining your own black-box models.
 
 ### Prerequisites
 To install the required packages we recommend using [Conda](https://docs.conda.io/en/latest/). Our used environment can be easily installed with conda.
@@ -43,13 +44,13 @@ To install the required packages we recommend using [Conda](https://docs.conda.i
 <!-- USAGE EXAMPLES -->
 ## Usage
 
-We provided example jupyter notebook for different use cases. You can find the notebooks [here](/notebooks/). The notebooks cover the following use cases:
+We provided an example jupyter notebook for different use cases. You can find the notebooks [here](/notebooks/). The notebooks cover the following use cases:
 * Explanation of image prediction
 * Explanation of tabular prediction
 * Explanation of text prediction
 
 ### Example
-Suppose you want to explain a tabular instance prediction. You can get an explanation with few lines of code.
+Suppose you want to explain a tabular instance prediction. You can get an explanation with a few lines of code.
 ```py
 import numpy as np
 import sklearn

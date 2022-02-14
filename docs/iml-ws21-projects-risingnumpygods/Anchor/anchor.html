@@ -77,6 +77,7 @@ class Anchor:
         method_specific: dict = None,
         num_coverage_samples: int = 10000,
         epsilon: float = 0.1,
+        delta: float = 0.1,
         batch_size: int = 16,
         verbose=False,
         seed=69,
@@ -114,9 +115,9 @@ class Anchor:
         self.sampler = Sampler.create(self.tasktype, input, predict_fn, task_specific)
 
         self.batch_size = batch_size
-
+        self.delta = delta
         logging.info(&#34; Start Sampling&#34;)
-        _, self.coverage_data, _ = self.sampler.sample(
+        _, self.coverage_data = self.sampler.sample(
             AnchorCandidate(feature_mask=[]), num_coverage_samples, False
         )
         exp = AnchorCandidate(feature_mask=[])
@@ -152,9 +153,19 @@ class Anchor:
     def generate_candidates(
         self, prev_anchors: list[AnchorCandidate], coverage_min: float
     ) -&gt; list[AnchorCandidate]:
+        &#34;&#34;&#34;
+        Generates new anchor candidates by adding a new unseen feature
+        to each previous anchor feature mask.
+
+        Args:
+            prev_anchors (list[AnchorCandidate]): previous anchors.
+            coverage_min (float): min_coverage an anchor must have.
+
+        Returns:
+            list[AnchorCandidate]: new anchor candidates
+        &#34;&#34;&#34;
         new_candidates: list[AnchorCandidate] = []
         # iterate over possible features or predicates
-
         for feature in range(self.sampler.num_features):
             # check if we have no prev anchors and create a complete new set
             if len(prev_anchors) == 0:
@@ -204,6 +215,9 @@ class Anchor:
         delta: float = 0.1,
         eps_stop: float = 0.05,
     ) -&gt; bool:
+        &#34;&#34;&#34;
+        Checks if an candidate fullfills precision boundary constraints
+        &#34;&#34;&#34;
         prec = candidate.precision
         beta = np.log(1.0 / (delta / (1 + (beam_size - 1) * self.sampler.num_features)))
 
@@ -212,7 +226,7 @@ class Anchor:
         while (prec &gt;= dconf and lb &lt; dconf - eps_stop) or (
             prec &lt; dconf and ub &gt;= dconf + eps_stop
         ):
-            nc, _, _ = self.sampler.sample(candidate, sample_count)
+            nc, _ = self.sampler.sample(candidate, sample_count)
             prec = nc.precision
             lb = KL_LUCB.dlow_bernoulli(prec, beta / nc.n_samples)
 
@@ -221,24 +235,39 @@ class Anchor:
         return prec &gt;= dconf and lb &gt; dconf - eps_stop
 
     def __greedy_anchor(
-        self, desired_confidence: float = 1, min_coverage: float = 0.2,
+        self,
+        desired_confidence: float = 1,
+        min_coverage: float = 0.2,
     ):
         &#34;&#34;&#34;
         Greedy Approach to calculate the shortest anchor, which fullfills the precision constraint EQ3.
+
+        Args:
+            desired_confidence (float): desired approximated precision
+            min_coverage (float): min coverage an anchor needs to be accepted
+
+        Returns:
+            AnchorCandidate: best found anchor
         &#34;&#34;&#34;
         candidates = self.generate_candidates([], min_coverage)
         anchor = self.kl_lucb.get_best_candidates(candidates, self.sampler, 1)[0]
 
         while not self.__check_valid_candidate(
-            anchor, 1, self.batch_size, desired_confidence
+            anchor, 1, self.batch_size, desired_confidence, self.delta
         ):
             candidates = self.generate_candidates([anchor], min_coverage)
+
+            if len(candidates) == 0:
+                break
+
             anchor = self.kl_lucb.get_best_candidates(candidates, self.sampler, 1)[0]
 
         return anchor
 
     def __beam_anchor(
-        self, desired_confidence: float, beam_size: int,
+        self,
+        desired_confidence: float,
+        beam_size: int,
     ) -&gt; AnchorCandidate:
         &#34;&#34;&#34;
         Beam search algorithm to find anchor.
@@ -258,10 +287,13 @@ class Anchor:
         while current_anchor_size &lt; max_anchor_size:
             # Generate candidates
             candidates = self.generate_candidates(
-                best_of_size[current_anchor_size - 1], best_candidate.coverage,
+                best_of_size[current_anchor_size - 1],
+                best_candidate.coverage,
             )
+
             if len(candidates) == 0:
                 break
+
             best_candidates = self.kl_lucb.get_best_candidates(
                 candidates, self.sampler, min(beam_size, len(candidates))
             )
@@ -275,6 +307,7 @@ class Anchor:
                         beam_size=beam_size,
                         sample_count=self.batch_size,
                         dconf=desired_confidence,
+                        delta=self.delta,
                     )
                     and c.coverage &gt; best_candidate.coverage
                 ):
@@ -334,12 +367,17 @@ class Anchor:
         )
 
     def smac_optimize(self, config):
-        &#34;&#34;&#34; Main bayesian optimization loop for smac. &#34;&#34;&#34;
+        &#34;&#34;&#34;
+        Main bayesian optimization loop for smac.
+
+        Args:
+            config (Configspace): Current feature configuration to be evalauted.
+        &#34;&#34;&#34;
         feature_mask = [int(f_idx) for f_idx, mv in config.items() if mv]
         # create candidate from config which is the feature mask to evaluate
         candidate = AnchorCandidate(feature_mask)
         # calculate expected precision
-        candidate, _, _ = self.sampler.sample(candidate, self.batch_size)
+        candidate, _ = self.sampler.sample(candidate, self.batch_size)
         candidate.coverage = self.__calculate_coverage(candidate)
 
         info = {&#34;precision&#34;: candidate.precision, &#34;coverage&#34;: candidate.coverage}
@@ -397,6 +435,7 @@ class Anchor:
         method_specific: dict = None,
         num_coverage_samples: int = 10000,
         epsilon: float = 0.1,
+        delta: float = 0.1,
         batch_size: int = 16,
         verbose=False,
         seed=69,
@@ -434,9 +473,9 @@ class Anchor:
         self.sampler = Sampler.create(self.tasktype, input, predict_fn, task_specific)
 
         self.batch_size = batch_size
-
+        self.delta = delta
         logging.info(&#34; Start Sampling&#34;)
-        _, self.coverage_data, _ = self.sampler.sample(
+        _, self.coverage_data = self.sampler.sample(
             AnchorCandidate(feature_mask=[]), num_coverage_samples, False
         )
         exp = AnchorCandidate(feature_mask=[])
@@ -472,9 +511,19 @@ class Anchor:
     def generate_candidates(
         self, prev_anchors: list[AnchorCandidate], coverage_min: float
     ) -&gt; list[AnchorCandidate]:
+        &#34;&#34;&#34;
+        Generates new anchor candidates by adding a new unseen feature
+        to each previous anchor feature mask.
+
+        Args:
+            prev_anchors (list[AnchorCandidate]): previous anchors.
+            coverage_min (float): min_coverage an anchor must have.
+
+        Returns:
+            list[AnchorCandidate]: new anchor candidates
+        &#34;&#34;&#34;
         new_candidates: list[AnchorCandidate] = []
         # iterate over possible features or predicates
-
         for feature in range(self.sampler.num_features):
             # check if we have no prev anchors and create a complete new set
             if len(prev_anchors) == 0:
@@ -524,6 +573,9 @@ class Anchor:
         delta: float = 0.1,
         eps_stop: float = 0.05,
     ) -&gt; bool:
+        &#34;&#34;&#34;
+        Checks if an candidate fullfills precision boundary constraints
+        &#34;&#34;&#34;
         prec = candidate.precision
         beta = np.log(1.0 / (delta / (1 + (beam_size - 1) * self.sampler.num_features)))
 
@@ -532,7 +584,7 @@ class Anchor:
         while (prec &gt;= dconf and lb &lt; dconf - eps_stop) or (
             prec &lt; dconf and ub &gt;= dconf + eps_stop
         ):
-            nc, _, _ = self.sampler.sample(candidate, sample_count)
+            nc, _ = self.sampler.sample(candidate, sample_count)
             prec = nc.precision
             lb = KL_LUCB.dlow_bernoulli(prec, beta / nc.n_samples)
 
@@ -541,24 +593,39 @@ class Anchor:
         return prec &gt;= dconf and lb &gt; dconf - eps_stop
 
     def __greedy_anchor(
-        self, desired_confidence: float = 1, min_coverage: float = 0.2,
+        self,
+        desired_confidence: float = 1,
+        min_coverage: float = 0.2,
     ):
         &#34;&#34;&#34;
         Greedy Approach to calculate the shortest anchor, which fullfills the precision constraint EQ3.
+
+        Args:
+            desired_confidence (float): desired approximated precision
+            min_coverage (float): min coverage an anchor needs to be accepted
+
+        Returns:
+            AnchorCandidate: best found anchor
         &#34;&#34;&#34;
         candidates = self.generate_candidates([], min_coverage)
         anchor = self.kl_lucb.get_best_candidates(candidates, self.sampler, 1)[0]
 
         while not self.__check_valid_candidate(
-            anchor, 1, self.batch_size, desired_confidence
+            anchor, 1, self.batch_size, desired_confidence, self.delta
         ):
             candidates = self.generate_candidates([anchor], min_coverage)
+
+            if len(candidates) == 0:
+                break
+
             anchor = self.kl_lucb.get_best_candidates(candidates, self.sampler, 1)[0]
 
         return anchor
 
     def __beam_anchor(
-        self, desired_confidence: float, beam_size: int,
+        self,
+        desired_confidence: float,
+        beam_size: int,
     ) -&gt; AnchorCandidate:
         &#34;&#34;&#34;
         Beam search algorithm to find anchor.
@@ -578,10 +645,13 @@ class Anchor:
         while current_anchor_size &lt; max_anchor_size:
             # Generate candidates
             candidates = self.generate_candidates(
-                best_of_size[current_anchor_size - 1], best_candidate.coverage,
+                best_of_size[current_anchor_size - 1],
+                best_candidate.coverage,
             )
+
             if len(candidates) == 0:
                 break
+
             best_candidates = self.kl_lucb.get_best_candidates(
                 candidates, self.sampler, min(beam_size, len(candidates))
             )
@@ -595,6 +665,7 @@ class Anchor:
                         beam_size=beam_size,
                         sample_count=self.batch_size,
                         dconf=desired_confidence,
+                        delta=self.delta,
                     )
                     and c.coverage &gt; best_candidate.coverage
                 ):
@@ -654,12 +725,17 @@ class Anchor:
         )
 
     def smac_optimize(self, config):
-        &#34;&#34;&#34; Main bayesian optimization loop for smac. &#34;&#34;&#34;
+        &#34;&#34;&#34;
+        Main bayesian optimization loop for smac.
+
+        Args:
+            config (Configspace): Current feature configuration to be evalauted.
+        &#34;&#34;&#34;
         feature_mask = [int(f_idx) for f_idx, mv in config.items() if mv]
         # create candidate from config which is the feature mask to evaluate
         candidate = AnchorCandidate(feature_mask)
         # calculate expected precision
-        candidate, _, _ = self.sampler.sample(candidate, self.batch_size)
+        candidate, _ = self.sampler.sample(candidate, self.batch_size)
         candidate.coverage = self.__calculate_coverage(candidate)
 
         info = {&#34;precision&#34;: candidate.precision, &#34;coverage&#34;: candidate.coverage}
@@ -692,7 +768,7 @@ class Anchor:
 <h3>Methods</h3>
 <dl>
 <dt id="iml-ws21-projects-risingnumpygods.Anchor.anchor.Anchor.explain_instance"><code class="name flex">
-<span>def <span class="ident">explain_instance</span></span>(<span>self, input: <built-in function any>, predict_fn: Callable[[<built-in function any>], <built-in function array>], method: str = 'greedy', task_specific: dict = None, method_specific: dict = None, num_coverage_samples: int = 10000, epsilon: float = 0.1, batch_size: int = 16, verbose=False, seed=69)</span>
+<span>def <span class="ident">explain_instance</span></span>(<span>self, input: <built-in function any>, predict_fn: Callable[[<built-in function any>], <built-in function array>], method: str = 'greedy', task_specific: dict = None, method_specific: dict = None, num_coverage_samples: int = 10000, epsilon: float = 0.1, delta: float = 0.1, batch_size: int = 16, verbose=False, seed=69)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Main entrance point to explain an instance.</p>
@@ -733,6 +809,7 @@ verbose (bool)</p>
     method_specific: dict = None,
     num_coverage_samples: int = 10000,
     epsilon: float = 0.1,
+    delta: float = 0.1,
     batch_size: int = 16,
     verbose=False,
     seed=69,
@@ -770,9 +847,9 @@ verbose (bool)</p>
     self.sampler = Sampler.create(self.tasktype, input, predict_fn, task_specific)
 
     self.batch_size = batch_size
-
+    self.delta = delta
     logging.info(&#34; Start Sampling&#34;)
-    _, self.coverage_data, _ = self.sampler.sample(
+    _, self.coverage_data = self.sampler.sample(
         AnchorCandidate(feature_mask=[]), num_coverage_samples, False
     )
     exp = AnchorCandidate(feature_mask=[])
@@ -793,7 +870,20 @@ verbose (bool)</p>
 <span>def <span class="ident">generate_candidates</span></span>(<span>self, prev_anchors: list, coverage_min: float) ‑> list</span>
 </code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>Generates new anchor candidates by adding a new unseen feature
+to each previous anchor feature mask.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>prev_anchors</code></strong> :&ensp;<code>list[AnchorCandidate]</code></dt>
+<dd>previous anchors.</dd>
+<dt><strong><code>coverage_min</code></strong> :&ensp;<code>float</code></dt>
+<dd>min_coverage an anchor must have.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>list[AnchorCandidate]</code></dt>
+<dd>new anchor candidates</dd>
+</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -801,9 +891,19 @@ verbose (bool)</p>
 <pre><code class="python">def generate_candidates(
     self, prev_anchors: list[AnchorCandidate], coverage_min: float
 ) -&gt; list[AnchorCandidate]:
+    &#34;&#34;&#34;
+    Generates new anchor candidates by adding a new unseen feature
+    to each previous anchor feature mask.
+
+    Args:
+        prev_anchors (list[AnchorCandidate]): previous anchors.
+        coverage_min (float): min_coverage an anchor must have.
+
+    Returns:
+        list[AnchorCandidate]: new anchor candidates
+    &#34;&#34;&#34;
     new_candidates: list[AnchorCandidate] = []
     # iterate over possible features or predicates
-
     for feature in range(self.sampler.num_features):
         # check if we have no prev anchors and create a complete new set
         if len(prev_anchors) == 0:
@@ -831,18 +931,28 @@ verbose (bool)</p>
 <span>def <span class="ident">smac_optimize</span></span>(<span>self, config)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Main bayesian optimization loop for smac.</p></div>
+<div class="desc"><p>Main bayesian optimization loop for smac.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>config</code></strong> :&ensp;<code>Configspace</code></dt>
+<dd>Current feature configuration to be evalauted.</dd>
+</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def smac_optimize(self, config):
-    &#34;&#34;&#34; Main bayesian optimization loop for smac. &#34;&#34;&#34;
+    &#34;&#34;&#34;
+    Main bayesian optimization loop for smac.
+
+    Args:
+        config (Configspace): Current feature configuration to be evalauted.
+    &#34;&#34;&#34;
     feature_mask = [int(f_idx) for f_idx, mv in config.items() if mv]
     # create candidate from config which is the feature mask to evaluate
     candidate = AnchorCandidate(feature_mask)
     # calculate expected precision
-    candidate, _, _ = self.sampler.sample(candidate, self.batch_size)
+    candidate, _ = self.sampler.sample(candidate, self.batch_size)
     candidate.coverage = self.__calculate_coverage(candidate)
 
     info = {&#34;precision&#34;: candidate.precision, &#34;coverage&#34;: candidate.coverage}

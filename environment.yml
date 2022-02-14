@@ -19,3 +19,7 @@ dependencies:
       - tensorflow
       - transformers
       - spacy
+      - lime
+      - pandas
+      - plotly
+      - nbformat
