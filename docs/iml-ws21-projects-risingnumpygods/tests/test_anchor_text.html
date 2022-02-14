@@ -42,7 +42,7 @@ Test funtions for text data anchor explainations
 &#34;&#34;&#34;
 
 
-def load_polarity(path=&#34;/datasets/rt-polaritydata/&#34;):
+def load_polarity(path=&#34;./datasets/rt-polaritydata/&#34;):
     &#34;&#34;&#34;
     Helper function to preprocess polarity dataset
     &#34;&#34;&#34;
@@ -82,7 +82,7 @@ def setup():
     vectorizer.fit(train)
     train_vectors = vectorizer.transform(train)
 
-    c = sklearn.linear_model.LogisticRegression()
+    c = sklearn.linear_model.LogisticRegression(random_state=1234)
     c.fit(train_vectors, train_labels)
 
     pytest.predict_fn = lambda x: c.predict(vectorizer.transform(x))
@@ -90,7 +90,7 @@ def setup():
 
 
 def test_text_greedy_search():
-    explainer = Anchor(Tasktype.TABULAR)
+    explainer = Anchor(Tasktype.TEXT)
     method_paras = {&#34;desired_confidence&#34;: 0.95}
     anchor = explainer.explain_instance(
         input=pytest.input,
@@ -100,12 +100,12 @@ def test_text_greedy_search():
         num_coverage_samples=1,
     )
 
-    assert anchor.feature_mask == [2, 0]
-    assert np.isclose(anchor.coverage, 0.54)
+    assert anchor.feature_mask == [3]
+    assert np.isclose(anchor.coverage, -1)
 
 
 def test_text_beam_search():
-    explainer = Anchor(Tasktype.TABULAR)
+    explainer = Anchor(Tasktype.TEXT)
 
     method_paras = {&#34;beam_size&#34;: 2, &#34;desired_confidence&#34;: 0.95}
     anchor = explainer.explain_instance(
@@ -116,8 +116,8 @@ def test_text_beam_search():
         num_coverage_samples=1,
     )
 
-    assert anchor.feature_mask == [0, 2]
-    assert np.isclose(anchor.coverage, 0.54)</code></pre>
+    assert anchor.feature_mask == [4, 3, 0]
+    assert np.isclose(anchor.coverage, 0.0)</code></pre>
 </details>
 </section>
 <section>
@@ -128,7 +128,7 @@ def test_text_beam_search():
 <h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
 <dt id="iml-ws21-projects-risingnumpygods.tests.test_anchor_text.load_polarity"><code class="name flex">
-<span>def <span class="ident">load_polarity</span></span>(<span>path='/datasets/rt-polaritydata/')</span>
+<span>def <span class="ident">load_polarity</span></span>(<span>path='./datasets/rt-polaritydata/')</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Helper function to preprocess polarity dataset</p></div>
@@ -136,7 +136,7 @@ def test_text_beam_search():
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def load_polarity(path=&#34;/datasets/rt-polaritydata/&#34;):
+<pre><code class="python">def load_polarity(path=&#34;./datasets/rt-polaritydata/&#34;):
     &#34;&#34;&#34;
     Helper function to preprocess polarity dataset
     &#34;&#34;&#34;
@@ -185,7 +185,7 @@ def setup():
     vectorizer.fit(train)
     train_vectors = vectorizer.transform(train)
 
-    c = sklearn.linear_model.LogisticRegression()
+    c = sklearn.linear_model.LogisticRegression(random_state=1234)
     c.fit(train_vectors, train_labels)
 
     pytest.predict_fn = lambda x: c.predict(vectorizer.transform(x))
@@ -202,7 +202,7 @@ def setup():
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def test_text_beam_search():
-    explainer = Anchor(Tasktype.TABULAR)
+    explainer = Anchor(Tasktype.TEXT)
 
     method_paras = {&#34;beam_size&#34;: 2, &#34;desired_confidence&#34;: 0.95}
     anchor = explainer.explain_instance(
@@ -213,8 +213,8 @@ def setup():
         num_coverage_samples=1,
     )
 
-    assert anchor.feature_mask == [0, 2]
-    assert np.isclose(anchor.coverage, 0.54)</code></pre>
+    assert anchor.feature_mask == [4, 3, 0]
+    assert np.isclose(anchor.coverage, 0.0)</code></pre>
 </details>
 </dd>
 <dt id="iml-ws21-projects-risingnumpygods.tests.test_anchor_text.test_text_greedy_search"><code class="name flex">
@@ -227,7 +227,7 @@ def setup():
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def test_text_greedy_search():
-    explainer = Anchor(Tasktype.TABULAR)
+    explainer = Anchor(Tasktype.TEXT)
     method_paras = {&#34;desired_confidence&#34;: 0.95}
     anchor = explainer.explain_instance(
         input=pytest.input,
@@ -237,8 +237,8 @@ def setup():
         num_coverage_samples=1,
     )
 
-    assert anchor.feature_mask == [2, 0]
-    assert np.isclose(anchor.coverage, 0.54)</code></pre>
+    assert anchor.feature_mask == [3]
+    assert np.isclose(anchor.coverage, -1)</code></pre>
 </details>
 </dd>
 </dl>
