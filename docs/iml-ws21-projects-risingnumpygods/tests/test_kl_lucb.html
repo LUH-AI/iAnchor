@@ -26,27 +26,27 @@
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">import pytest
-from Anchor.bandit import KL_LUCB
-
-
-def test_best_candidate():
-    ...
+<pre><code class="python">from Anchor.bandit import KL_LUCB
 
 
 def test_dup_bernoulli():
-    um = KL_LUCB.dup_bernoulli(0.2, 1)
-    assert um == 0.839887952608281
+    um = KL_LUCB.dup_bernoulli(0.5, 1)
+    assert um == 0.9649367481470108
 
 
 def test_dlow_bernoulli():
-    lm = KL_LUCB.dlow_bernoulli(0.2, 1)
-    assert lm == 0.0005531907081604004
+    lm = KL_LUCB.dlow_bernoulli(0.5, 1)
+    assert lm == 0.0350632518529892
 
 
 def test_kl_bernoulli():
-    kl = KL_LUCB.kl_bernoulli(1, 0.2)
-    assert kl == 1.609437912434096</code></pre>
+    kl = KL_LUCB.kl_bernoulli(1, 0.5)
+    assert kl == 0.6931471805599411
+
+
+def test_compute_beta_bernoulli():
+    beta = KL_LUCB.compute_beta(5, 1, 0.5)
+    assert beta == 10.424889480332546</code></pre>
 </details>
 </section>
 <section>
@@ -56,8 +56,8 @@ def test_kl_bernoulli():
 <section>
 <h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
-<dt id="iml-ws21-projects-risingnumpygods.tests.test_kl_lucb.test_best_candidate"><code class="name flex">
-<span>def <span class="ident">test_best_candidate</span></span>(<span>)</span>
+<dt id="iml-ws21-projects-risingnumpygods.tests.test_kl_lucb.test_compute_beta_bernoulli"><code class="name flex">
+<span>def <span class="ident">test_compute_beta_bernoulli</span></span>(<span>)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -65,8 +65,9 @@ def test_kl_bernoulli():
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def test_best_candidate():
-    ...</code></pre>
+<pre><code class="python">def test_compute_beta_bernoulli():
+    beta = KL_LUCB.compute_beta(5, 1, 0.5)
+    assert beta == 10.424889480332546</code></pre>
 </details>
 </dd>
 <dt id="iml-ws21-projects-risingnumpygods.tests.test_kl_lucb.test_dlow_bernoulli"><code class="name flex">
@@ -79,8 +80,8 @@ def test_kl_bernoulli():
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def test_dlow_bernoulli():
-    lm = KL_LUCB.dlow_bernoulli(0.2, 1)
-    assert lm == 0.0005531907081604004</code></pre>
+    lm = KL_LUCB.dlow_bernoulli(0.5, 1)
+    assert lm == 0.0350632518529892</code></pre>
 </details>
 </dd>
 <dt id="iml-ws21-projects-risingnumpygods.tests.test_kl_lucb.test_dup_bernoulli"><code class="name flex">
@@ -93,8 +94,8 @@ def test_kl_bernoulli():
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def test_dup_bernoulli():
-    um = KL_LUCB.dup_bernoulli(0.2, 1)
-    assert um == 0.839887952608281</code></pre>
+    um = KL_LUCB.dup_bernoulli(0.5, 1)
+    assert um == 0.9649367481470108</code></pre>
 </details>
 </dd>
 <dt id="iml-ws21-projects-risingnumpygods.tests.test_kl_lucb.test_kl_bernoulli"><code class="name flex">
@@ -107,8 +108,8 @@ def test_kl_bernoulli():
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def test_kl_bernoulli():
-    kl = KL_LUCB.kl_bernoulli(1, 0.2)
-    assert kl == 1.609437912434096</code></pre>
+    kl = KL_LUCB.kl_bernoulli(1, 0.5)
+    assert kl == 0.6931471805599411</code></pre>
 </details>
 </dd>
 </dl>
@@ -129,7 +130,7 @@ def test_kl_bernoulli():
 </li>
 <li><h3><a href="#header-functions">Functions</a></h3>
 <ul class="">
-<li><code><a title="iml-ws21-projects-risingnumpygods.tests.test_kl_lucb.test_best_candidate" href="#iml-ws21-projects-risingnumpygods.tests.test_kl_lucb.test_best_candidate">test_best_candidate</a></code></li>
+<li><code><a title="iml-ws21-projects-risingnumpygods.tests.test_kl_lucb.test_compute_beta_bernoulli" href="#iml-ws21-projects-risingnumpygods.tests.test_kl_lucb.test_compute_beta_bernoulli">test_compute_beta_bernoulli</a></code></li>
 <li><code><a title="iml-ws21-projects-risingnumpygods.tests.test_kl_lucb.test_dlow_bernoulli" href="#iml-ws21-projects-risingnumpygods.tests.test_kl_lucb.test_dlow_bernoulli">test_dlow_bernoulli</a></code></li>
 <li><code><a title="iml-ws21-projects-risingnumpygods.tests.test_kl_lucb.test_dup_bernoulli" href="#iml-ws21-projects-risingnumpygods.tests.test_kl_lucb.test_dup_bernoulli">test_dup_bernoulli</a></code></li>
 <li><code><a title="iml-ws21-projects-risingnumpygods.tests.test_kl_lucb.test_kl_bernoulli" href="#iml-ws21-projects-risingnumpygods.tests.test_kl_lucb.test_kl_bernoulli">test_kl_bernoulli</a></code></li>

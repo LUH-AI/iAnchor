@@ -26,9 +26,7 @@
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">import os
-
-import numpy as np
+<pre><code class="python">import numpy as np
 import pytest
 import sklearn
 import sklearn.ensemble
@@ -49,41 +47,68 @@ def setup():
     data = np.genfromtxt(&#34;datasets/titanic.txt&#34;, delimiter=&#34;,&#34;)
     y_train = data[:, -1]
     X_train = data[:, :-1]
-    c = sklearn.ensemble.RandomForestClassifier(n_estimators=100, n_jobs=5)
+    c = sklearn.ensemble.RandomForestClassifier(
+        n_estimators=100, n_jobs=5, random_state=123
+    )
     c.fit(X_train, y_train)
+    task_paras = {
+        &#34;dataset&#34;: X_train,
+        &#34;column_names&#34;: [
+            &#34;PcClass&#34;,
+            &#34;Name&#34;,
+            &#34;Sex&#34;,
+            &#34;Age&#34;,
+            &#34;SibSp&#34;,
+            &#34;Parch&#34;,
+            &#34;Ticket&#34;,
+            &#34;Fare&#34;,
+            &#34;Cabin&#34;,
+            &#34;Embarked&#34;,
+        ],
+    }
     pytest.predict_fn = c.predict
     pytest.train_data = X_train
+    pytest.task_paras = task_paras
 
 
 def test_tabular_greedy_search():
     explainer = Anchor(Tasktype.TABULAR)
+    method_paras = {&#34;desired_confidence&#34;: 1.0}
     anchor = explainer.explain_instance(
-        pytest.train_data[759].reshape(1, -1),
-        pytest.predict_fn,
-        &#34;greedy&#34;,
-        pytest.train_data,
-        100,
-        batch_size=32,
-    )
-
-    assert anchor.feature_mask == [2, 0, 8]
-    assert np.isclose(anchor.coverage, 0.43)
-
-
-def test_tabular_beam_search():
-    explainer = Anchor(Tasktype.TABULAR)
-    anchor = explainer.explain_instance(
-        pytest.train_data[759].reshape(1, -1),
-        pytest.predict_fn,
-        &#34;beam&#34;,
-        pytest.train_data,
-        100,
+        input=pytest.train_data[759].reshape(1, -1),
+        predict_fn=pytest.predict_fn,
+        method=&#34;greedy&#34;,
+        task_specific=pytest.task_paras,
+        method_specific=method_paras,
+        num_coverage_samples=100,
         batch_size=32,
     )
 
     assert anchor.feature_mask == [2, 0]
-    assert np.isclose(anchor.coverage, 0.58)
+    assert np.isclose(anchor.coverage, 0.54)
 
+
+def test_tabular_beam_search():
+    explainer = Anchor(Tasktype.TABULAR)
+
+    method_paras = {&#34;beam_size&#34;: 2, &#34;desired_confidence&#34;: 1.0}
+    anchor = explainer.explain_instance(
+        input=pytest.train_data[759].reshape(1, -1),
+        predict_fn=pytest.predict_fn,
+        method=&#34;beam&#34;,
+        task_specific=pytest.task_paras,
+        method_specific=method_paras,
+        num_coverage_samples=100,
+        batch_size=32,
+    )
+
+    assert anchor.feature_mask == [0, 2]
+    assert np.isclose(anchor.coverage, 0.54)
+
+
+&#34;&#34;&#34;
+This is not recommended since the result is dependant on the users hardware
+and takes really long to run if runtime is set to inf.
 
 def test_tabular_smac_search():
     explainer = Anchor(Tasktype.TABULAR)
@@ -96,7 +121,9 @@ def test_tabular_smac_search():
         batch_size=32,
     )  # 30 seconds test
 
-    assert anchor.feature_mask == [0, 1, 2, 7, 8]</code></pre>
+    assert anchor.feature_mask == [0, 1, 2, 7, 8]
+
+&#34;&#34;&#34;</code></pre>
 </details>
 </section>
 <section>
@@ -125,10 +152,28 @@ def setup():
     data = np.genfromtxt(&#34;datasets/titanic.txt&#34;, delimiter=&#34;,&#34;)
     y_train = data[:, -1]
     X_train = data[:, :-1]
-    c = sklearn.ensemble.RandomForestClassifier(n_estimators=100, n_jobs=5)
+    c = sklearn.ensemble.RandomForestClassifier(
+        n_estimators=100, n_jobs=5, random_state=123
+    )
     c.fit(X_train, y_train)
+    task_paras = {
+        &#34;dataset&#34;: X_train,
+        &#34;column_names&#34;: [
+            &#34;PcClass&#34;,
+            &#34;Name&#34;,
+            &#34;Sex&#34;,
+            &#34;Age&#34;,
+            &#34;SibSp&#34;,
+            &#34;Parch&#34;,
+            &#34;Ticket&#34;,
+            &#34;Fare&#34;,
+            &#34;Cabin&#34;,
+            &#34;Embarked&#34;,
+        ],
+    }
     pytest.predict_fn = c.predict
-    pytest.train_data = X_train</code></pre>
+    pytest.train_data = X_train
+    pytest.task_paras = task_paras</code></pre>
 </details>
 </dd>
 <dt id="iml-ws21-projects-risingnumpygods.tests.test_anchor_tabular.test_tabular_beam_search"><code class="name flex">
@@ -142,17 +187,20 @@ def setup():
 </summary>
 <pre><code class="python">def test_tabular_beam_search():
     explainer = Anchor(Tasktype.TABULAR)
+
+    method_paras = {&#34;beam_size&#34;: 2, &#34;desired_confidence&#34;: 1.0}
     anchor = explainer.explain_instance(
-        pytest.train_data[759].reshape(1, -1),
-        pytest.predict_fn,
-        &#34;beam&#34;,
-        pytest.train_data,
-        100,
+        input=pytest.train_data[759].reshape(1, -1),
+        predict_fn=pytest.predict_fn,
+        method=&#34;beam&#34;,
+        task_specific=pytest.task_paras,
+        method_specific=method_paras,
+        num_coverage_samples=100,
         batch_size=32,
     )
 
-    assert anchor.feature_mask == [2, 0]
-    assert np.isclose(anchor.coverage, 0.58)</code></pre>
+    assert anchor.feature_mask == [0, 2]
+    assert np.isclose(anchor.coverage, 0.54)</code></pre>
 </details>
 </dd>
 <dt id="iml-ws21-projects-risingnumpygods.tests.test_anchor_tabular.test_tabular_greedy_search"><code class="name flex">
@@ -166,40 +214,19 @@ def setup():
 </summary>
 <pre><code class="python">def test_tabular_greedy_search():
     explainer = Anchor(Tasktype.TABULAR)
+    method_paras = {&#34;desired_confidence&#34;: 1.0}
     anchor = explainer.explain_instance(
-        pytest.train_data[759].reshape(1, -1),
-        pytest.predict_fn,
-        &#34;greedy&#34;,
-        pytest.train_data,
-        100,
+        input=pytest.train_data[759].reshape(1, -1),
+        predict_fn=pytest.predict_fn,
+        method=&#34;greedy&#34;,
+        task_specific=pytest.task_paras,
+        method_specific=method_paras,
+        num_coverage_samples=100,
         batch_size=32,
     )
 
-    assert anchor.feature_mask == [2, 0, 8]
-    assert np.isclose(anchor.coverage, 0.43)</code></pre>
-</details>
-</dd>
-<dt id="iml-ws21-projects-risingnumpygods.tests.test_anchor_tabular.test_tabular_smac_search"><code class="name flex">
-<span>def <span class="ident">test_tabular_smac_search</span></span>(<span>)</span>
-</code></dt>
-<dd>
-<div class="desc"></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def test_tabular_smac_search():
-    explainer = Anchor(Tasktype.TABULAR)
-    anchor = explainer.explain_instance(
-        pytest.train_data[759].reshape(1, -1),
-        pytest.predict_fn,
-        &#34;smac&#34;,
-        pytest.train_data,
-        100,
-        batch_size=32,
-    )  # 30 seconds test
-
-    assert anchor.feature_mask == [0, 1, 2, 7, 8]</code></pre>
+    assert anchor.feature_mask == [2, 0]
+    assert np.isclose(anchor.coverage, 0.54)</code></pre>
 </details>
 </dd>
 </dl>
@@ -223,7 +250,6 @@ def setup():
 <li><code><a title="iml-ws21-projects-risingnumpygods.tests.test_anchor_tabular.setup" href="#iml-ws21-projects-risingnumpygods.tests.test_anchor_tabular.setup">setup</a></code></li>
 <li><code><a title="iml-ws21-projects-risingnumpygods.tests.test_anchor_tabular.test_tabular_beam_search" href="#iml-ws21-projects-risingnumpygods.tests.test_anchor_tabular.test_tabular_beam_search">test_tabular_beam_search</a></code></li>
 <li><code><a title="iml-ws21-projects-risingnumpygods.tests.test_anchor_tabular.test_tabular_greedy_search" href="#iml-ws21-projects-risingnumpygods.tests.test_anchor_tabular.test_tabular_greedy_search">test_tabular_greedy_search</a></code></li>
-<li><code><a title="iml-ws21-projects-risingnumpygods.tests.test_anchor_tabular.test_tabular_smac_search" href="#iml-ws21-projects-risingnumpygods.tests.test_anchor_tabular.test_tabular_smac_search">test_tabular_smac_search</a></code></li>
 </ul>
 </li>
 </ul>

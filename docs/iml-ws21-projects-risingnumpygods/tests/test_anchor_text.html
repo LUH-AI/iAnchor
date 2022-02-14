@@ -22,12 +22,226 @@
 <h1 class="title">Module <code>iml-ws21-projects-risingnumpygods.tests.test_anchor_text</code></h1>
 </header>
 <section id="section-intro">
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">import os
+
+import numpy as np
+import pytest
+import sklearn
+import sklearn.ensemble
+import spacy
+from Anchor.anchor import Anchor
+from Anchor.sampler import Tasktype
+from sklearn.feature_extraction.text import CountVectorizer
+
+&#34;&#34;&#34;
+Test funtions for text data anchor explainations
+&#34;&#34;&#34;
+
+
+def load_polarity(path=&#34;/datasets/rt-polaritydata/&#34;):
+    &#34;&#34;&#34;
+    Helper function to preprocess polarity dataset
+    &#34;&#34;&#34;
+    data = []
+    labels = []
+    f_names = [&#34;rt-polarity.neg&#34;, &#34;rt-polarity.pos&#34;]
+    for (l, f) in enumerate(f_names):
+        for line in open(os.path.join(path, f), &#34;rb&#34;):
+            try:
+                line.decode(&#34;utf8&#34;)
+            except:
+                continue
+            data.append(line.strip())
+            labels.append(l)
+    return data, labels
+
+
+@pytest.fixture(scope=&#34;session&#34;, autouse=True)
+def setup():
+    &#34;&#34;&#34;
+    For text tests we use cornell polarity data and a simple sample sentence
+    &#34;&#34;&#34;
+    nlp = spacy.load(&#34;en_core_web_sm&#34;)
+    text_to_be_explained = &#34;This is a good book .&#34;
+    preprocessed_text = [word.text for word in nlp(text_to_be_explained)]
+    data, labels = load_polarity()
+
+    train, _, train_labels, _ = sklearn.model_selection.train_test_split(
+        data, labels, test_size=0.2, random_state=42
+    )
+    train, _, train_labels, _ = sklearn.model_selection.train_test_split(
+        train, train_labels, test_size=0.1, random_state=42
+    )
+    train_labels = np.array(train_labels)
+
+    vectorizer = CountVectorizer(min_df=1)
+    vectorizer.fit(train)
+    train_vectors = vectorizer.transform(train)
+
+    c = sklearn.linear_model.LogisticRegression()
+    c.fit(train_vectors, train_labels)
+
+    pytest.predict_fn = lambda x: c.predict(vectorizer.transform(x))
+    pytest.input = preprocessed_text
+
+
+def test_text_greedy_search():
+    explainer = Anchor(Tasktype.TABULAR)
+    method_paras = {&#34;desired_confidence&#34;: 0.95}
+    anchor = explainer.explain_instance(
+        input=pytest.input,
+        predict_fn=pytest.predict_fn,
+        method=&#34;greedy&#34;,
+        method_specific=method_paras,
+        num_coverage_samples=1,
+    )
+
+    assert anchor.feature_mask == [2, 0]
+    assert np.isclose(anchor.coverage, 0.54)
+
+
+def test_text_beam_search():
+    explainer = Anchor(Tasktype.TABULAR)
+
+    method_paras = {&#34;beam_size&#34;: 2, &#34;desired_confidence&#34;: 0.95}
+    anchor = explainer.explain_instance(
+        input=pytest.input,
+        predict_fn=pytest.predict_fn,
+        method=&#34;beam&#34;,
+        method_specific=method_paras,
+        num_coverage_samples=1,
+    )
+
+    assert anchor.feature_mask == [0, 2]
+    assert np.isclose(anchor.coverage, 0.54)</code></pre>
+</details>
 </section>
 <section>
 </section>
 <section>
 </section>
 <section>
+<h2 class="section-title" id="header-functions">Functions</h2>
+<dl>
+<dt id="iml-ws21-projects-risingnumpygods.tests.test_anchor_text.load_polarity"><code class="name flex">
+<span>def <span class="ident">load_polarity</span></span>(<span>path='/datasets/rt-polaritydata/')</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Helper function to preprocess polarity dataset</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def load_polarity(path=&#34;/datasets/rt-polaritydata/&#34;):
+    &#34;&#34;&#34;
+    Helper function to preprocess polarity dataset
+    &#34;&#34;&#34;
+    data = []
+    labels = []
+    f_names = [&#34;rt-polarity.neg&#34;, &#34;rt-polarity.pos&#34;]
+    for (l, f) in enumerate(f_names):
+        for line in open(os.path.join(path, f), &#34;rb&#34;):
+            try:
+                line.decode(&#34;utf8&#34;)
+            except:
+                continue
+            data.append(line.strip())
+            labels.append(l)
+    return data, labels</code></pre>
+</details>
+</dd>
+<dt id="iml-ws21-projects-risingnumpygods.tests.test_anchor_text.setup"><code class="name flex">
+<span>def <span class="ident">setup</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>For text tests we use cornell polarity data and a simple sample sentence</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@pytest.fixture(scope=&#34;session&#34;, autouse=True)
+def setup():
+    &#34;&#34;&#34;
+    For text tests we use cornell polarity data and a simple sample sentence
+    &#34;&#34;&#34;
+    nlp = spacy.load(&#34;en_core_web_sm&#34;)
+    text_to_be_explained = &#34;This is a good book .&#34;
+    preprocessed_text = [word.text for word in nlp(text_to_be_explained)]
+    data, labels = load_polarity()
+
+    train, _, train_labels, _ = sklearn.model_selection.train_test_split(
+        data, labels, test_size=0.2, random_state=42
+    )
+    train, _, train_labels, _ = sklearn.model_selection.train_test_split(
+        train, train_labels, test_size=0.1, random_state=42
+    )
+    train_labels = np.array(train_labels)
+
+    vectorizer = CountVectorizer(min_df=1)
+    vectorizer.fit(train)
+    train_vectors = vectorizer.transform(train)
+
+    c = sklearn.linear_model.LogisticRegression()
+    c.fit(train_vectors, train_labels)
+
+    pytest.predict_fn = lambda x: c.predict(vectorizer.transform(x))
+    pytest.input = preprocessed_text</code></pre>
+</details>
+</dd>
+<dt id="iml-ws21-projects-risingnumpygods.tests.test_anchor_text.test_text_beam_search"><code class="name flex">
+<span>def <span class="ident">test_text_beam_search</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def test_text_beam_search():
+    explainer = Anchor(Tasktype.TABULAR)
+
+    method_paras = {&#34;beam_size&#34;: 2, &#34;desired_confidence&#34;: 0.95}
+    anchor = explainer.explain_instance(
+        input=pytest.input,
+        predict_fn=pytest.predict_fn,
+        method=&#34;beam&#34;,
+        method_specific=method_paras,
+        num_coverage_samples=1,
+    )
+
+    assert anchor.feature_mask == [0, 2]
+    assert np.isclose(anchor.coverage, 0.54)</code></pre>
+</details>
+</dd>
+<dt id="iml-ws21-projects-risingnumpygods.tests.test_anchor_text.test_text_greedy_search"><code class="name flex">
+<span>def <span class="ident">test_text_greedy_search</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def test_text_greedy_search():
+    explainer = Anchor(Tasktype.TABULAR)
+    method_paras = {&#34;desired_confidence&#34;: 0.95}
+    anchor = explainer.explain_instance(
+        input=pytest.input,
+        predict_fn=pytest.predict_fn,
+        method=&#34;greedy&#34;,
+        method_specific=method_paras,
+        num_coverage_samples=1,
+    )
+
+    assert anchor.feature_mask == [2, 0]
+    assert np.isclose(anchor.coverage, 0.54)</code></pre>
+</details>
+</dd>
+</dl>
 </section>
 <section>
 </section>
@@ -41,6 +255,14 @@
 <li><h3>Super-module</h3>
 <ul>
 <li><code><a title="iml-ws21-projects-risingnumpygods.tests" href="index.html">iml-ws21-projects-risingnumpygods.tests</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="">
+<li><code><a title="iml-ws21-projects-risingnumpygods.tests.test_anchor_text.load_polarity" href="#iml-ws21-projects-risingnumpygods.tests.test_anchor_text.load_polarity">load_polarity</a></code></li>
+<li><code><a title="iml-ws21-projects-risingnumpygods.tests.test_anchor_text.setup" href="#iml-ws21-projects-risingnumpygods.tests.test_anchor_text.setup">setup</a></code></li>
+<li><code><a title="iml-ws21-projects-risingnumpygods.tests.test_anchor_text.test_text_beam_search" href="#iml-ws21-projects-risingnumpygods.tests.test_anchor_text.test_text_beam_search">test_text_beam_search</a></code></li>
+<li><code><a title="iml-ws21-projects-risingnumpygods.tests.test_anchor_text.test_text_greedy_search" href="#iml-ws21-projects-risingnumpygods.tests.test_anchor_text.test_text_greedy_search">test_text_greedy_search</a></code></li>
 </ul>
 </li>
 </ul>

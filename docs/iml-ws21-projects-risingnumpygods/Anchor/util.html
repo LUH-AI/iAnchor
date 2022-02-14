@@ -32,6 +32,9 @@ import torch
 
 
 def tf_wrapper(func):
+    &#34;&#34;&#34;
+    Should not be used in current state, since not tested
+    &#34;&#34;&#34;
     def wrapper(*args, **kwargs):
         x = tf.convert_to_tensor(args[0])
         y_proba = func(x).numpy()
@@ -200,12 +203,15 @@ Defaults to torch.device("cpu").</dd>
 <span>def <span class="ident">tf_wrapper</span></span>(<span>func)</span>
 </code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>Should not be used in current state, since not tested</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def tf_wrapper(func):
+    &#34;&#34;&#34;
+    Should not be used in current state, since not tested
+    &#34;&#34;&#34;
     def wrapper(*args, **kwargs):
         x = tf.convert_to_tensor(args[0])
         y_proba = func(x).numpy()
