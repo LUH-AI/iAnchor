@@ -126,7 +126,7 @@ class TabularSampler(Sampler):
         Args:
             input (any): Tabular row that is to be explained.
             predict_fn (Callable[[any], np.array]): Black box model predict function.
-            dataset (any): Tabular dataset from which samples will be collected.
+            dataset (any): Tabular dataset from which samples will be collected. Expected to be discretized.
             column_names (list): Columns names of the dataset.
         &#34;&#34;&#34;
 
@@ -151,7 +151,7 @@ class TabularSampler(Sampler):
         candidate: AnchorCandidate,
         num_samples: int,
         calculate_labels: bool = True,
-    ) -&gt; Tuple[AnchorCandidate, np.ndarray, np.ndarray]:
+    ) -&gt; Tuple[AnchorCandidate, np.ndarray]:
         &#34;&#34;&#34;
         Generates num_samples samples by choosing random values
         out of self.dataset and setting the self.input features
@@ -164,8 +164,8 @@ class TabularSampler(Sampler):
             candiates precision will be updated. Defaults to True.
 
         Returns:
-            Tuple[AnchorCandidate, np.ndarray, np.ndarray]: Structure: [AnchorCandiate, coverage_mask, None]. In case
-            calculate_labels is False return [None, coverage_mask, None].
+            Tuple[AnchorCandidate, np.ndarray]: Structure: [AnchorCandiate, coverage_mask]. In case
+            calculate_labels is False return [None, coverage_mask].
         &#34;&#34;&#34;
 
         if self.dataset.shape[0] &gt; num_samples:
@@ -188,7 +188,6 @@ class TabularSampler(Sampler):
 
         # predict samples
         preds = self.predict_fn(samples)
-
         labels = (preds == self.label).astype(int)
 
         # update candidate
@@ -240,7 +239,7 @@ class ImageSampler(Sampler):
 
         # parameters from original implementation
         segment_features = np.unique(self.features)
-        self._n_features = len(segment_features)
+        self.num_features = len(segment_features)
 
         # create superpixel image by replacing superpixels by its mean in the original image
         self.sp_image = np.copy(input)
@@ -258,7 +257,7 @@ class ImageSampler(Sampler):
         candidate: AnchorCandidate,
         num_samples: int,
         calculate_labels: bool = True,
-    ) -&gt; Tuple[AnchorCandidate, np.ndarray, np.ndarray]:
+    ) -&gt; Tuple[AnchorCandidate, np.ndarray]:
         &#34;&#34;&#34;
         Generates num_samples samples by choosing random values
         out of self.dataset and setting the self.input features
@@ -272,46 +271,45 @@ class ImageSampler(Sampler):
             candidate (AnchorCandidate): AnchorCandiate which contains the features to be fixated.
             num_samples (int): Number of samples that shall be generated.
             calculate_labels (bool, optional): When true label of the samples will predicted. In that case the
-            candiates precision will be updated. Defaults to True.
+                candiates precision will be updated. Defaults to True.
 
         Returns:
-            Tuple[AnchorCandidate, np.ndarray, np.ndarray]: Structure: [AnchorCandiate, coverage_mask, segmentations]. In case
-            calculate_labels is False return [None, coverage_mask, None].
+            Tuple[AnchorCandidate, np.ndarray]: Structure: [AnchorCandiate, coverage_mask]. In case
+            calculate_labels is False return [None, coverage_mask].
         &#34;&#34;&#34;
         data = np.random.randint(
-            0, 2, size=(num_samples, self._n_features)
+            0, 2, size=(num_samples, self.num_features)
         )  # generate random feature mask for each sample
         data[:, candidate.feature_mask] = 1  # set present features to one
 
         if not calculate_labels:
             return None, data
 
+        # generate either samples from the dataset or mean superpixel
         if self.dataset is not None:
             return self.sample_dataset(candidate, data, num_samples)
         else:
             return self.sample_mean_superpixel(candidate, data, num_samples)
 
     def sample_dataset(
-        self,
-        candidate: AnchorCandidate,
-        data: np.ndarray,
-        num_samples: int,
-    ) -&gt; Tuple[AnchorCandidate, np.ndarray, np.ndarray]:
+        self, candidate: AnchorCandidate, data: np.ndarray, num_samples: int,
+    ) -&gt; Tuple[AnchorCandidate, np.ndarray]:
         &#34;&#34;&#34;
         Samples num_samples samples by utilising the image dataset.
 
         Args:
-            candidate (AnchorCandidate): AnchorCandiate that shall be evaluted
+            candidate (AnchorCandidate): AnchorCandidate which precision will be updated.
             data (np.ndarray): Features masks
             num_samples (int): Number of samples to be generated.
 
         Returns:
-            Tuple[AnchorCandidate, np.ndarray, np.ndarray]: Structure: [AnchorCandiate, coverage_mask, segmentations]
+            Tuple[AnchorCandidate, np.ndarray]: Structure: [AnchorCandiate, coverage_mask]
         &#34;&#34;&#34;
         perturb_sample_idxs = np.random.choice(
             range(self.dataset.shape[0]), num_samples, replace=True
         )
 
+        # generate samples from the dataset
         samples = np.stack(
             [
                 self.__generate_image(mask, self.dataset[pidx])
@@ -320,6 +318,42 @@ class ImageSampler(Sampler):
             axis=0,
         )
 
+        # predict samples
+        preds = self.predict_fn(samples)
+        labels = (preds == self.label).astype(int)
+
+        # update candidate prec
+        candidate.update_precision(np.sum(labels), num_samples)
+
+        return candidate, data
+
+    def sample_mean_superpixel(
+        self, candidate: AnchorCandidate, data: np.ndarray, num_samples: int,
+    ) -&gt; Tuple[AnchorCandidate, np.ndarray]:
+        &#34;&#34;&#34;
+        Sample function for image data.
+        Generates random image samples from the distribution around the original image.
+
+        Args:
+            candidate (AnchorCandidate): AnchorCandidate which precision will be updated.
+            data (np.ndarray): Generated feature mask.
+            num_samples (int): Number of samples to be generated.
+
+        Returns:
+            Tuple[AnchorCandidate, np.ndarray]: Returns the AnchorCandiate and the feature masks.
+        &#34;&#34;&#34;
+        # Sample function for image data.
+        # Generates random image samples from the distribution around the original image.
+
+        # Args:
+        #     candidate (AnchorCandidate)
+        #     num_samples (int)
+        # Returns:
+        #     candidate (AnchorCandidate)
+        # &#34;&#34;&#34;
+        samples = np.stack([self.__generate_image(mask) for mask in data], axis=0)
+
+        # predict labels
         preds = self.predict_fn(samples)
         labels = (preds == self.label).astype(int)
 
@@ -328,64 +362,26 @@ class ImageSampler(Sampler):
 
         return candidate, data
 
-    def sample_mean_superpixel(
-        self,
-        candidate: AnchorCandidate,
-        data: np.ndarray,
-        num_samples: int,
-    ) -&gt; Tuple[AnchorCandidate, np.ndarray, np.ndarray]:
-        &#34;&#34;&#34;
-        Sample function for image data.
-        Generates random image samples from the distribution around the original image.
-
-        Args:
-            candidate (AnchorCandidate)
-            num_samples (int)
-        Returns:
-            candidate (AnchorCandidate)
-        &#34;&#34;&#34;
-        samples = np.stack(
-            [self.__generate_image(mask, self.sp_image) for mask in data], axis=0
-        )
-
-        preds = self.predict_fn(samples)
-
-        # assert isinstance(
-        #     preds, np.ndarray
-        # ), &#34;Result of your predict function should be of type numpy.ndarray&#34;
-
-        labels = (preds == self.label).astype(int)
-
-        # update candidate
-        candidate.update_precision(np.sum(labels), num_samples)
-
-        return candidate, data, self.features  # TODO remove third return variable
-
-    def __generate_image(
-        self, feature_mask: np.ndarray, perturb_image: np.ndarray
-    ) -&gt; np.array:
+    def __generate_image(self, feature_mask: np.ndarray) -&gt; np.array:
         &#34;&#34;&#34;
         Generate sample image given some feature mask.
         The true image will get permutated dependent on the feature mask.
         Pixel which are outmasked by the mask are replaced by the corresponding superpixel pixel.
 
         Args:
-            feature_mask: np.ndarray
+            feature_mask (np.ndarray): Feature mask to generate picture with 
+
         Returns:
-            permutated image: np.array
+            np.array: Generated image.
         &#34;&#34;&#34;
         img = self.image.copy()
         zeros = np.where(feature_mask == 0)[0]
         mask = np.zeros(self.features.shape).astype(bool)
         for z in zeros:
             mask[self.features == z] = True
-        img[mask] = perturb_image[mask]
+        img[mask] = self.sp_image[mask]
 
         return img
-
-    @property
-    def num_features(self):
-        return self._n_features
 
 
 class TextSampler(Sampler):
@@ -495,7 +491,7 @@ class TextSampler(Sampler):
         candidate: AnchorCandidate,
         num_samples: int,
         calculate_labels: bool = True,
-    ) -&gt; Tuple[AnchorCandidate, np.ndarray, np.ndarray]:
+    ) -&gt; Tuple[AnchorCandidate, np.ndarray]:
         &#34;&#34;&#34;
         Generates num_samples samples by choosing if words
         that are not within the candiates feature mask should
@@ -564,10 +560,7 @@ class TextSampler(Sampler):
         return &#34; &#34;.join(sentence_cp)
 
     def __sample_pertubated_sentences(
-        self,
-        candidate: AnchorCandidate,
-        data: np.ndarray,
-        num_samples: int,
+        self, candidate: AnchorCandidate, data: np.ndarray, num_samples: int,
     ) -&gt; Tuple[AnchorCandidate, np.ndarray, np.ndarray]:
         &#34;&#34;&#34;
         Generate num_sampels new sentences (via self.__generate_sentence),
@@ -694,7 +687,7 @@ by utilising mean superpixels.</p>
 
         # parameters from original implementation
         segment_features = np.unique(self.features)
-        self._n_features = len(segment_features)
+        self.num_features = len(segment_features)
 
         # create superpixel image by replacing superpixels by its mean in the original image
         self.sp_image = np.copy(input)
@@ -712,7 +705,7 @@ by utilising mean superpixels.</p>
         candidate: AnchorCandidate,
         num_samples: int,
         calculate_labels: bool = True,
-    ) -&gt; Tuple[AnchorCandidate, np.ndarray, np.ndarray]:
+    ) -&gt; Tuple[AnchorCandidate, np.ndarray]:
         &#34;&#34;&#34;
         Generates num_samples samples by choosing random values
         out of self.dataset and setting the self.input features
@@ -726,46 +719,45 @@ by utilising mean superpixels.</p>
             candidate (AnchorCandidate): AnchorCandiate which contains the features to be fixated.
             num_samples (int): Number of samples that shall be generated.
             calculate_labels (bool, optional): When true label of the samples will predicted. In that case the
-            candiates precision will be updated. Defaults to True.
+                candiates precision will be updated. Defaults to True.
 
         Returns:
-            Tuple[AnchorCandidate, np.ndarray, np.ndarray]: Structure: [AnchorCandiate, coverage_mask, segmentations]. In case
-            calculate_labels is False return [None, coverage_mask, None].
+            Tuple[AnchorCandidate, np.ndarray]: Structure: [AnchorCandiate, coverage_mask]. In case
+            calculate_labels is False return [None, coverage_mask].
         &#34;&#34;&#34;
         data = np.random.randint(
-            0, 2, size=(num_samples, self._n_features)
+            0, 2, size=(num_samples, self.num_features)
         )  # generate random feature mask for each sample
         data[:, candidate.feature_mask] = 1  # set present features to one
 
         if not calculate_labels:
             return None, data
 
+        # generate either samples from the dataset or mean superpixel
         if self.dataset is not None:
             return self.sample_dataset(candidate, data, num_samples)
         else:
             return self.sample_mean_superpixel(candidate, data, num_samples)
 
     def sample_dataset(
-        self,
-        candidate: AnchorCandidate,
-        data: np.ndarray,
-        num_samples: int,
-    ) -&gt; Tuple[AnchorCandidate, np.ndarray, np.ndarray]:
+        self, candidate: AnchorCandidate, data: np.ndarray, num_samples: int,
+    ) -&gt; Tuple[AnchorCandidate, np.ndarray]:
         &#34;&#34;&#34;
         Samples num_samples samples by utilising the image dataset.
 
         Args:
-            candidate (AnchorCandidate): AnchorCandiate that shall be evaluted
+            candidate (AnchorCandidate): AnchorCandidate which precision will be updated.
             data (np.ndarray): Features masks
             num_samples (int): Number of samples to be generated.
 
         Returns:
-            Tuple[AnchorCandidate, np.ndarray, np.ndarray]: Structure: [AnchorCandiate, coverage_mask, segmentations]
+            Tuple[AnchorCandidate, np.ndarray]: Structure: [AnchorCandiate, coverage_mask]
         &#34;&#34;&#34;
         perturb_sample_idxs = np.random.choice(
             range(self.dataset.shape[0]), num_samples, replace=True
         )
 
+        # generate samples from the dataset
         samples = np.stack(
             [
                 self.__generate_image(mask, self.dataset[pidx])
@@ -774,6 +766,42 @@ by utilising mean superpixels.</p>
             axis=0,
         )
 
+        # predict samples
+        preds = self.predict_fn(samples)
+        labels = (preds == self.label).astype(int)
+
+        # update candidate prec
+        candidate.update_precision(np.sum(labels), num_samples)
+
+        return candidate, data
+
+    def sample_mean_superpixel(
+        self, candidate: AnchorCandidate, data: np.ndarray, num_samples: int,
+    ) -&gt; Tuple[AnchorCandidate, np.ndarray]:
+        &#34;&#34;&#34;
+        Sample function for image data.
+        Generates random image samples from the distribution around the original image.
+
+        Args:
+            candidate (AnchorCandidate): AnchorCandidate which precision will be updated.
+            data (np.ndarray): Generated feature mask.
+            num_samples (int): Number of samples to be generated.
+
+        Returns:
+            Tuple[AnchorCandidate, np.ndarray]: Returns the AnchorCandiate and the feature masks.
+        &#34;&#34;&#34;
+        # Sample function for image data.
+        # Generates random image samples from the distribution around the original image.
+
+        # Args:
+        #     candidate (AnchorCandidate)
+        #     num_samples (int)
+        # Returns:
+        #     candidate (AnchorCandidate)
+        # &#34;&#34;&#34;
+        samples = np.stack([self.__generate_image(mask) for mask in data], axis=0)
+
+        # predict labels
         preds = self.predict_fn(samples)
         labels = (preds == self.label).astype(int)
 
@@ -782,64 +810,26 @@ by utilising mean superpixels.</p>
 
         return candidate, data
 
-    def sample_mean_superpixel(
-        self,
-        candidate: AnchorCandidate,
-        data: np.ndarray,
-        num_samples: int,
-    ) -&gt; Tuple[AnchorCandidate, np.ndarray, np.ndarray]:
-        &#34;&#34;&#34;
-        Sample function for image data.
-        Generates random image samples from the distribution around the original image.
-
-        Args:
-            candidate (AnchorCandidate)
-            num_samples (int)
-        Returns:
-            candidate (AnchorCandidate)
-        &#34;&#34;&#34;
-        samples = np.stack(
-            [self.__generate_image(mask, self.sp_image) for mask in data], axis=0
-        )
-
-        preds = self.predict_fn(samples)
-
-        # assert isinstance(
-        #     preds, np.ndarray
-        # ), &#34;Result of your predict function should be of type numpy.ndarray&#34;
-
-        labels = (preds == self.label).astype(int)
-
-        # update candidate
-        candidate.update_precision(np.sum(labels), num_samples)
-
-        return candidate, data, self.features  # TODO remove third return variable
-
-    def __generate_image(
-        self, feature_mask: np.ndarray, perturb_image: np.ndarray
-    ) -&gt; np.array:
+    def __generate_image(self, feature_mask: np.ndarray) -&gt; np.array:
         &#34;&#34;&#34;
         Generate sample image given some feature mask.
         The true image will get permutated dependent on the feature mask.
         Pixel which are outmasked by the mask are replaced by the corresponding superpixel pixel.
 
         Args:
-            feature_mask: np.ndarray
+            feature_mask (np.ndarray): Feature mask to generate picture with 
+
         Returns:
-            permutated image: np.array
+            np.array: Generated image.
         &#34;&#34;&#34;
         img = self.image.copy()
         zeros = np.where(feature_mask == 0)[0]
         mask = np.zeros(self.features.shape).astype(bool)
         for z in zeros:
             mask[self.features == z] = True
-        img[mask] = perturb_image[mask]
+        img[mask] = self.sp_image[mask]
 
-        return img
-
-    @property
-    def num_features(self):
-        return self._n_features</code></pre>
+        return img</code></pre>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
@@ -852,25 +842,10 @@ by utilising mean superpixels.</p>
 <div class="desc"></div>
 </dd>
 </dl>
-<h3>Instance variables</h3>
-<dl>
-<dt id="iml-ws21-projects-risingnumpygods.Anchor.sampler.ImageSampler.num_features"><code class="name">var <span class="ident">num_features</span></code></dt>
-<dd>
-<div class="desc"></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">@property
-def num_features(self):
-    return self._n_features</code></pre>
-</details>
-</dd>
-</dl>
 <h3>Methods</h3>
 <dl>
 <dt id="iml-ws21-projects-risingnumpygods.Anchor.sampler.ImageSampler.sample"><code class="name flex">
-<span>def <span class="ident">sample</span></span>(<span>self, candidate: iml-ws21-projects-risingnumpygods.Anchor.candidate.AnchorCandidate, num_samples: int, calculate_labels: bool = True) ‑> Tuple[iml-ws21-projects-risingnumpygods.Anchor.candidate.AnchorCandidate, numpy.ndarray, numpy.ndarray]</span>
+<span>def <span class="ident">sample</span></span>(<span>self, candidate: iml-ws21-projects-risingnumpygods.Anchor.candidate.AnchorCandidate, num_samples: int, calculate_labels: bool = True) ‑> Tuple[iml-ws21-projects-risingnumpygods.Anchor.candidate.AnchorCandidate, numpy.ndarray]</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Generates num_samples samples by choosing random values
@@ -886,15 +861,15 @@ is sampled</p>
 <dt><strong><code>num_samples</code></strong> :&ensp;<code>int</code></dt>
 <dd>Number of samples that shall be generated.</dd>
 <dt><strong><code>calculate_labels</code></strong> :&ensp;<code>bool</code>, optional</dt>
-<dd>When true label of the samples will predicted. In that case the</dd>
+<dd>When true label of the samples will predicted. In that case the
+candiates precision will be updated. Defaults to True.</dd>
 </dl>
-<p>candiates precision will be updated. Defaults to True.</p>
 <h2 id="returns">Returns</h2>
 <dl>
-<dt><code>Tuple[AnchorCandidate, np.ndarray, np.ndarray]</code></dt>
-<dd>Structure: [AnchorCandiate, coverage_mask, segmentations]. In case</dd>
+<dt><code>Tuple[AnchorCandidate, np.ndarray]</code></dt>
+<dd>Structure: [AnchorCandiate, coverage_mask]. In case</dd>
 </dl>
-<p>calculate_labels is False return [None, coverage_mask, None].</p></div>
+<p>calculate_labels is False return [None, coverage_mask].</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -904,7 +879,7 @@ is sampled</p>
     candidate: AnchorCandidate,
     num_samples: int,
     calculate_labels: bool = True,
-) -&gt; Tuple[AnchorCandidate, np.ndarray, np.ndarray]:
+) -&gt; Tuple[AnchorCandidate, np.ndarray]:
     &#34;&#34;&#34;
     Generates num_samples samples by choosing random values
     out of self.dataset and setting the self.input features
@@ -918,20 +893,21 @@ is sampled</p>
         candidate (AnchorCandidate): AnchorCandiate which contains the features to be fixated.
         num_samples (int): Number of samples that shall be generated.
         calculate_labels (bool, optional): When true label of the samples will predicted. In that case the
-        candiates precision will be updated. Defaults to True.
+            candiates precision will be updated. Defaults to True.
 
     Returns:
-        Tuple[AnchorCandidate, np.ndarray, np.ndarray]: Structure: [AnchorCandiate, coverage_mask, segmentations]. In case
-        calculate_labels is False return [None, coverage_mask, None].
+        Tuple[AnchorCandidate, np.ndarray]: Structure: [AnchorCandiate, coverage_mask]. In case
+        calculate_labels is False return [None, coverage_mask].
     &#34;&#34;&#34;
     data = np.random.randint(
-        0, 2, size=(num_samples, self._n_features)
+        0, 2, size=(num_samples, self.num_features)
     )  # generate random feature mask for each sample
     data[:, candidate.feature_mask] = 1  # set present features to one
 
     if not calculate_labels:
         return None, data
 
+    # generate either samples from the dataset or mean superpixel
     if self.dataset is not None:
         return self.sample_dataset(candidate, data, num_samples)
     else:
@@ -939,14 +915,14 @@ is sampled</p>
 </details>
 </dd>
 <dt id="iml-ws21-projects-risingnumpygods.Anchor.sampler.ImageSampler.sample_dataset"><code class="name flex">
-<span>def <span class="ident">sample_dataset</span></span>(<span>self, candidate: iml-ws21-projects-risingnumpygods.Anchor.candidate.AnchorCandidate, data: numpy.ndarray, num_samples: int) ‑> Tuple[iml-ws21-projects-risingnumpygods.Anchor.candidate.AnchorCandidate, numpy.ndarray, numpy.ndarray]</span>
+<span>def <span class="ident">sample_dataset</span></span>(<span>self, candidate: iml-ws21-projects-risingnumpygods.Anchor.candidate.AnchorCandidate, data: numpy.ndarray, num_samples: int) ‑> Tuple[iml-ws21-projects-risingnumpygods.Anchor.candidate.AnchorCandidate, numpy.ndarray]</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Samples num_samples samples by utilising the image dataset.</p>
 <h2 id="args">Args</h2>
 <dl>
 <dt><strong><code>candidate</code></strong> :&ensp;<code>AnchorCandidate</code></dt>
-<dd>AnchorCandiate that shall be evaluted</dd>
+<dd>AnchorCandidate which precision will be updated.</dd>
 <dt><strong><code>data</code></strong> :&ensp;<code>np.ndarray</code></dt>
 <dd>Features masks</dd>
 <dt><strong><code>num_samples</code></strong> :&ensp;<code>int</code></dt>
@@ -954,34 +930,32 @@ is sampled</p>
 </dl>
 <h2 id="returns">Returns</h2>
 <dl>
-<dt><code>Tuple[AnchorCandidate, np.ndarray, np.ndarray]</code></dt>
-<dd>Structure: [AnchorCandiate, coverage_mask, segmentations]</dd>
+<dt><code>Tuple[AnchorCandidate, np.ndarray]</code></dt>
+<dd>Structure: [AnchorCandiate, coverage_mask]</dd>
 </dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def sample_dataset(
-    self,
-    candidate: AnchorCandidate,
-    data: np.ndarray,
-    num_samples: int,
-) -&gt; Tuple[AnchorCandidate, np.ndarray, np.ndarray]:
+    self, candidate: AnchorCandidate, data: np.ndarray, num_samples: int,
+) -&gt; Tuple[AnchorCandidate, np.ndarray]:
     &#34;&#34;&#34;
     Samples num_samples samples by utilising the image dataset.
 
     Args:
-        candidate (AnchorCandidate): AnchorCandiate that shall be evaluted
+        candidate (AnchorCandidate): AnchorCandidate which precision will be updated.
         data (np.ndarray): Features masks
         num_samples (int): Number of samples to be generated.
 
     Returns:
-        Tuple[AnchorCandidate, np.ndarray, np.ndarray]: Structure: [AnchorCandiate, coverage_mask, segmentations]
+        Tuple[AnchorCandidate, np.ndarray]: Structure: [AnchorCandiate, coverage_mask]
     &#34;&#34;&#34;
     perturb_sample_idxs = np.random.choice(
         range(self.dataset.shape[0]), num_samples, replace=True
     )
 
+    # generate samples from the dataset
     samples = np.stack(
         [
             self.__generate_image(mask, self.dataset[pidx])
@@ -990,6 +964,67 @@ is sampled</p>
         axis=0,
     )
 
+    # predict samples
+    preds = self.predict_fn(samples)
+    labels = (preds == self.label).astype(int)
+
+    # update candidate prec
+    candidate.update_precision(np.sum(labels), num_samples)
+
+    return candidate, data</code></pre>
+</details>
+</dd>
+<dt id="iml-ws21-projects-risingnumpygods.Anchor.sampler.ImageSampler.sample_mean_superpixel"><code class="name flex">
+<span>def <span class="ident">sample_mean_superpixel</span></span>(<span>self, candidate: iml-ws21-projects-risingnumpygods.Anchor.candidate.AnchorCandidate, data: numpy.ndarray, num_samples: int) ‑> Tuple[iml-ws21-projects-risingnumpygods.Anchor.candidate.AnchorCandidate, numpy.ndarray]</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Sample function for image data.
+Generates random image samples from the distribution around the original image.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>candidate</code></strong> :&ensp;<code>AnchorCandidate</code></dt>
+<dd>AnchorCandidate which precision will be updated.</dd>
+<dt><strong><code>data</code></strong> :&ensp;<code>np.ndarray</code></dt>
+<dd>Generated feature mask.</dd>
+<dt><strong><code>num_samples</code></strong> :&ensp;<code>int</code></dt>
+<dd>Number of samples to be generated.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>Tuple[AnchorCandidate, np.ndarray]</code></dt>
+<dd>Returns the AnchorCandiate and the feature masks.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def sample_mean_superpixel(
+    self, candidate: AnchorCandidate, data: np.ndarray, num_samples: int,
+) -&gt; Tuple[AnchorCandidate, np.ndarray]:
+    &#34;&#34;&#34;
+    Sample function for image data.
+    Generates random image samples from the distribution around the original image.
+
+    Args:
+        candidate (AnchorCandidate): AnchorCandidate which precision will be updated.
+        data (np.ndarray): Generated feature mask.
+        num_samples (int): Number of samples to be generated.
+
+    Returns:
+        Tuple[AnchorCandidate, np.ndarray]: Returns the AnchorCandiate and the feature masks.
+    &#34;&#34;&#34;
+    # Sample function for image data.
+    # Generates random image samples from the distribution around the original image.
+
+    # Args:
+    #     candidate (AnchorCandidate)
+    #     num_samples (int)
+    # Returns:
+    #     candidate (AnchorCandidate)
+    # &#34;&#34;&#34;
+    samples = np.stack([self.__generate_image(mask) for mask in data], axis=0)
+
+    # predict labels
     preds = self.predict_fn(samples)
     labels = (preds == self.label).astype(int)
 
@@ -997,55 +1032,6 @@ is sampled</p>
     candidate.update_precision(np.sum(labels), num_samples)
 
     return candidate, data</code></pre>
-</details>
-</dd>
-<dt id="iml-ws21-projects-risingnumpygods.Anchor.sampler.ImageSampler.sample_mean_superpixel"><code class="name flex">
-<span>def <span class="ident">sample_mean_superpixel</span></span>(<span>self, candidate: iml-ws21-projects-risingnumpygods.Anchor.candidate.AnchorCandidate, data: numpy.ndarray, num_samples: int) ‑> Tuple[iml-ws21-projects-risingnumpygods.Anchor.candidate.AnchorCandidate, numpy.ndarray, numpy.ndarray]</span>
-</code></dt>
-<dd>
-<div class="desc"><p>Sample function for image data.
-Generates random image samples from the distribution around the original image.</p>
-<h2 id="args">Args</h2>
-<p>candidate (AnchorCandidate)
-num_samples (int)</p>
-<h2 id="returns">Returns</h2>
-<p>candidate (AnchorCandidate)</p></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def sample_mean_superpixel(
-    self,
-    candidate: AnchorCandidate,
-    data: np.ndarray,
-    num_samples: int,
-) -&gt; Tuple[AnchorCandidate, np.ndarray, np.ndarray]:
-    &#34;&#34;&#34;
-    Sample function for image data.
-    Generates random image samples from the distribution around the original image.
-
-    Args:
-        candidate (AnchorCandidate)
-        num_samples (int)
-    Returns:
-        candidate (AnchorCandidate)
-    &#34;&#34;&#34;
-    samples = np.stack(
-        [self.__generate_image(mask, self.sp_image) for mask in data], axis=0
-    )
-
-    preds = self.predict_fn(samples)
-
-    # assert isinstance(
-    #     preds, np.ndarray
-    # ), &#34;Result of your predict function should be of type numpy.ndarray&#34;
-
-    labels = (preds == self.label).astype(int)
-
-    # update candidate
-    candidate.update_precision(np.sum(labels), num_samples)
-
-    return candidate, data, self.features  # TODO remove third return variable</code></pre>
 </details>
 </dd>
 </dl>
@@ -1187,7 +1173,7 @@ samples and the input.</p>
 <dt><strong><code>predict_fn</code></strong> :&ensp;<code>Callable[[any], np.array]</code></dt>
 <dd>Black box model predict function.</dd>
 <dt><strong><code>dataset</code></strong> :&ensp;<code>any</code></dt>
-<dd>Tabular dataset from which samples will be collected.</dd>
+<dd>Tabular dataset from which samples will be collected. Expected to be discretized.</dd>
 <dt><strong><code>column_names</code></strong> :&ensp;<code>list</code></dt>
 <dd>Columns names of the dataset.</dd>
 </dl></div>
@@ -1222,7 +1208,7 @@ samples and the input.</p>
         Args:
             input (any): Tabular row that is to be explained.
             predict_fn (Callable[[any], np.array]): Black box model predict function.
-            dataset (any): Tabular dataset from which samples will be collected.
+            dataset (any): Tabular dataset from which samples will be collected. Expected to be discretized.
             column_names (list): Columns names of the dataset.
         &#34;&#34;&#34;
 
@@ -1247,7 +1233,7 @@ samples and the input.</p>
         candidate: AnchorCandidate,
         num_samples: int,
         calculate_labels: bool = True,
-    ) -&gt; Tuple[AnchorCandidate, np.ndarray, np.ndarray]:
+    ) -&gt; Tuple[AnchorCandidate, np.ndarray]:
         &#34;&#34;&#34;
         Generates num_samples samples by choosing random values
         out of self.dataset and setting the self.input features
@@ -1260,8 +1246,8 @@ samples and the input.</p>
             candiates precision will be updated. Defaults to True.
 
         Returns:
-            Tuple[AnchorCandidate, np.ndarray, np.ndarray]: Structure: [AnchorCandiate, coverage_mask, None]. In case
-            calculate_labels is False return [None, coverage_mask, None].
+            Tuple[AnchorCandidate, np.ndarray]: Structure: [AnchorCandiate, coverage_mask]. In case
+            calculate_labels is False return [None, coverage_mask].
         &#34;&#34;&#34;
 
         if self.dataset.shape[0] &gt; num_samples:
@@ -1284,7 +1270,6 @@ samples and the input.</p>
 
         # predict samples
         preds = self.predict_fn(samples)
-
         labels = (preds == self.label).astype(int)
 
         # update candidate
@@ -1306,7 +1291,7 @@ samples and the input.</p>
 <h3>Methods</h3>
 <dl>
 <dt id="iml-ws21-projects-risingnumpygods.Anchor.sampler.TabularSampler.sample"><code class="name flex">
-<span>def <span class="ident">sample</span></span>(<span>self, candidate: iml-ws21-projects-risingnumpygods.Anchor.candidate.AnchorCandidate, num_samples: int, calculate_labels: bool = True) ‑> Tuple[iml-ws21-projects-risingnumpygods.Anchor.candidate.AnchorCandidate, numpy.ndarray, numpy.ndarray]</span>
+<span>def <span class="ident">sample</span></span>(<span>self, candidate: iml-ws21-projects-risingnumpygods.Anchor.candidate.AnchorCandidate, num_samples: int, calculate_labels: bool = True) ‑> Tuple[iml-ws21-projects-risingnumpygods.Anchor.candidate.AnchorCandidate, numpy.ndarray]</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Generates num_samples samples by choosing random values
@@ -1324,10 +1309,10 @@ that are withing the candidates feature mask.</p>
 <p>candiates precision will be updated. Defaults to True.</p>
 <h2 id="returns">Returns</h2>
 <dl>
-<dt><code>Tuple[AnchorCandidate, np.ndarray, np.ndarray]</code></dt>
-<dd>Structure: [AnchorCandiate, coverage_mask, None]. In case</dd>
+<dt><code>Tuple[AnchorCandidate, np.ndarray]</code></dt>
+<dd>Structure: [AnchorCandiate, coverage_mask]. In case</dd>
 </dl>
-<p>calculate_labels is False return [None, coverage_mask, None].</p></div>
+<p>calculate_labels is False return [None, coverage_mask].</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -1337,7 +1322,7 @@ that are withing the candidates feature mask.</p>
     candidate: AnchorCandidate,
     num_samples: int,
     calculate_labels: bool = True,
-) -&gt; Tuple[AnchorCandidate, np.ndarray, np.ndarray]:
+) -&gt; Tuple[AnchorCandidate, np.ndarray]:
     &#34;&#34;&#34;
     Generates num_samples samples by choosing random values
     out of self.dataset and setting the self.input features
@@ -1350,8 +1335,8 @@ that are withing the candidates feature mask.</p>
         candiates precision will be updated. Defaults to True.
 
     Returns:
-        Tuple[AnchorCandidate, np.ndarray, np.ndarray]: Structure: [AnchorCandiate, coverage_mask, None]. In case
-        calculate_labels is False return [None, coverage_mask, None].
+        Tuple[AnchorCandidate, np.ndarray]: Structure: [AnchorCandiate, coverage_mask]. In case
+        calculate_labels is False return [None, coverage_mask].
     &#34;&#34;&#34;
 
     if self.dataset.shape[0] &gt; num_samples:
@@ -1374,7 +1359,6 @@ that are withing the candidates feature mask.</p>
 
     # predict samples
     preds = self.predict_fn(samples)
-
     labels = (preds == self.label).astype(int)
 
     # update candidate
@@ -1565,7 +1549,7 @@ samples and the input.</p>
         candidate: AnchorCandidate,
         num_samples: int,
         calculate_labels: bool = True,
-    ) -&gt; Tuple[AnchorCandidate, np.ndarray, np.ndarray]:
+    ) -&gt; Tuple[AnchorCandidate, np.ndarray]:
         &#34;&#34;&#34;
         Generates num_samples samples by choosing if words
         that are not within the candiates feature mask should
@@ -1634,10 +1618,7 @@ samples and the input.</p>
         return &#34; &#34;.join(sentence_cp)
 
     def __sample_pertubated_sentences(
-        self,
-        candidate: AnchorCandidate,
-        data: np.ndarray,
-        num_samples: int,
+        self, candidate: AnchorCandidate, data: np.ndarray, num_samples: int,
     ) -&gt; Tuple[AnchorCandidate, np.ndarray, np.ndarray]:
         &#34;&#34;&#34;
         Generate num_sampels new sentences (via self.__generate_sentence),
@@ -1770,7 +1751,7 @@ and probabilites shall be predicted.</dd>
 </details>
 </dd>
 <dt id="iml-ws21-projects-risingnumpygods.Anchor.sampler.TextSampler.sample"><code class="name flex">
-<span>def <span class="ident">sample</span></span>(<span>self, candidate: iml-ws21-projects-risingnumpygods.Anchor.candidate.AnchorCandidate, num_samples: int, calculate_labels: bool = True) ‑> Tuple[iml-ws21-projects-risingnumpygods.Anchor.candidate.AnchorCandidate, numpy.ndarray, numpy.ndarray]</span>
+<span>def <span class="ident">sample</span></span>(<span>self, candidate: iml-ws21-projects-risingnumpygods.Anchor.candidate.AnchorCandidate, num_samples: int, calculate_labels: bool = True) ‑> Tuple[iml-ws21-projects-risingnumpygods.Anchor.candidate.AnchorCandidate, numpy.ndarray]</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Generates num_samples samples by choosing if words
@@ -1801,7 +1782,7 @@ be masked given their original probability (self.pr).</p>
     candidate: AnchorCandidate,
     num_samples: int,
     calculate_labels: bool = True,
-) -&gt; Tuple[AnchorCandidate, np.ndarray, np.ndarray]:
+) -&gt; Tuple[AnchorCandidate, np.ndarray]:
     &#34;&#34;&#34;
     Generates num_samples samples by choosing if words
     that are not within the candiates feature mask should
@@ -1871,7 +1852,6 @@ be masked given their original probability (self.pr).</p>
 <li>
 <h4><code><a title="iml-ws21-projects-risingnumpygods.Anchor.sampler.ImageSampler" href="#iml-ws21-projects-risingnumpygods.Anchor.sampler.ImageSampler">ImageSampler</a></code></h4>
 <ul class="">
-<li><code><a title="iml-ws21-projects-risingnumpygods.Anchor.sampler.ImageSampler.num_features" href="#iml-ws21-projects-risingnumpygods.Anchor.sampler.ImageSampler.num_features">num_features</a></code></li>
 <li><code><a title="iml-ws21-projects-risingnumpygods.Anchor.sampler.ImageSampler.sample" href="#iml-ws21-projects-risingnumpygods.Anchor.sampler.ImageSampler.sample">sample</a></code></li>
 <li><code><a title="iml-ws21-projects-risingnumpygods.Anchor.sampler.ImageSampler.sample_dataset" href="#iml-ws21-projects-risingnumpygods.Anchor.sampler.ImageSampler.sample_dataset">sample_dataset</a></code></li>
 <li><code><a title="iml-ws21-projects-risingnumpygods.Anchor.sampler.ImageSampler.sample_mean_superpixel" href="#iml-ws21-projects-risingnumpygods.Anchor.sampler.ImageSampler.sample_mean_superpixel">sample_mean_superpixel</a></code></li>

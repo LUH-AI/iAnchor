@@ -63,18 +63,26 @@ def setup():
         ]
     )
 
-    image = Image.open(&#34;../static/dog_paper.jpeg&#34;)
+    image = Image.open(&#34;./static/dog_paper.jpeg&#34;)
     input = preprocess(image).unsqueeze(0)
 
-    pytest.predict_fn = model
+    @pytorch_image_wrapper(device)
+    def predict(x):
+        return model(x)
+
+    pytest.predict_fn = predict
     pytest.device = device
     pytest.input = input
 
 
 def test_image_sampler():
-    image = torch.Tensor(img_as_float(astronaut()[::2, ::2]))
-    sampler = Sampler().create(Tasktype.IMAGE, image, pytest.predict_fn)
-    candidate = AnchorCandidate(torch.arange(sampler._n_features))
+    sampler = Sampler().create(
+        Tasktype.IMAGE,
+        pytest.input.squeeze().permute(1, 2, 0),
+        pytest.predict_fn,
+        task_specific={},
+    )
+    candidate = AnchorCandidate(torch.arange(sampler.num_features))
     candidate, _ = sampler.sample(candidate, 3)
 
     assert candidate.n_samples == 3
@@ -84,14 +92,10 @@ def test_image_sampler():
 def test_image_greedy_search():
     explainer = Anchor(Tasktype.IMAGE)
 
-    @pytorch_image_wrapper(pytest.device)
-    def predict(x):
-        return pytest.predict_fn(x)
-
     method_paras = {&#34;desired_confidence&#34;: 1.0}
     anchor = explainer.explain_instance(
         pytest.input.squeeze().permute(1, 2, 0),
-        predict_fn=predict,
+        predict_fn=pytest.predict_fn,
         method=&#34;greedy&#34;,
         method_specific=method_paras,
         num_coverage_samples=1000,
@@ -104,14 +108,10 @@ def test_image_greedy_search():
 def test_image_beam_search():
     explainer = Anchor(Tasktype.IMAGE)
 
-    @pytorch_image_wrapper(pytest.device)
-    def predict(x):
-        return pytest.predict_fn(x)
-
     method_paras = {&#34;beam_size&#34;: 2, &#34;desired_confidence&#34;: 1.0}
     anchor = explainer.explain_instance(
         pytest.input.squeeze().permute(1, 2, 0),
-        predict_fn=predict,
+        predict_fn=pytest.predict_fn,
         method=&#34;beam&#34;,
         method_specific=method_paras,
         num_coverage_samples=1000,
@@ -153,10 +153,14 @@ def setup():
         ]
     )
 
-    image = Image.open(&#34;../static/dog_paper.jpeg&#34;)
+    image = Image.open(&#34;./static/dog_paper.jpeg&#34;)
     input = preprocess(image).unsqueeze(0)
 
-    pytest.predict_fn = model
+    @pytorch_image_wrapper(device)
+    def predict(x):
+        return model(x)
+
+    pytest.predict_fn = predict
     pytest.device = device
     pytest.input = input</code></pre>
 </details>
@@ -173,14 +177,10 @@ def setup():
 <pre><code class="python">def test_image_beam_search():
     explainer = Anchor(Tasktype.IMAGE)
 
-    @pytorch_image_wrapper(pytest.device)
-    def predict(x):
-        return pytest.predict_fn(x)
-
     method_paras = {&#34;beam_size&#34;: 2, &#34;desired_confidence&#34;: 1.0}
     anchor = explainer.explain_instance(
         pytest.input.squeeze().permute(1, 2, 0),
-        predict_fn=predict,
+        predict_fn=pytest.predict_fn,
         method=&#34;beam&#34;,
         method_specific=method_paras,
         num_coverage_samples=1000,
@@ -202,14 +202,10 @@ def setup():
 <pre><code class="python">def test_image_greedy_search():
     explainer = Anchor(Tasktype.IMAGE)
 
-    @pytorch_image_wrapper(pytest.device)
-    def predict(x):
-        return pytest.predict_fn(x)
-
     method_paras = {&#34;desired_confidence&#34;: 1.0}
     anchor = explainer.explain_instance(
         pytest.input.squeeze().permute(1, 2, 0),
-        predict_fn=predict,
+        predict_fn=pytest.predict_fn,
         method=&#34;greedy&#34;,
         method_specific=method_paras,
         num_coverage_samples=1000,
@@ -229,9 +225,13 @@ def setup():
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def test_image_sampler():
-    image = torch.Tensor(img_as_float(astronaut()[::2, ::2]))
-    sampler = Sampler().create(Tasktype.IMAGE, image, pytest.predict_fn)
-    candidate = AnchorCandidate(torch.arange(sampler._n_features))
+    sampler = Sampler().create(
+        Tasktype.IMAGE,
+        pytest.input.squeeze().permute(1, 2, 0),
+        pytest.predict_fn,
+        task_specific={},
+    )
+    candidate = AnchorCandidate(torch.arange(sampler.num_features))
     candidate, _ = sampler.sample(candidate, 3)
 
     assert candidate.n_samples == 3

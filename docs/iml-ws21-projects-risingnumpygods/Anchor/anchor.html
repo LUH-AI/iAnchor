@@ -91,7 +91,9 @@ class Anchor:
             method (String): Defines the optimization function. Can be (``greedy``), (``beam``) or (``smac``).
             dataset (np.array): The dataset for permutation. Could be images for image task or tabular data for tabular task.
             task_specific (dict): Task specific arguments. For tabular this includes the (``column_names``) and (``dataset``) argument. For images it includes (``dataset``).
-            method_specific (dict): Optimization method specific arguments. For Beam Search this includes (``beam_size``) and (``desired_confidence``). For greedy this includes (``desired_confidence``). For Smac this includes (``run_time``).
+            method_specific (dict): Optimization method specific arguments. For Beam Search this includes (``beam_size``) and (``desired_confidence``). 
+                For greedy this includes (``desired_confidence``). For Smac this includes (``run_time``) in seconds and (``optim``). 
+                Optim is a function with the signature AnchorCandiate -&gt; float that will be minimized.
             num_coverage_samples (int): Number of coverage samples
             desired_confidence (float): desired precision confidence for the anchor.
             epsilon (float)
@@ -102,6 +104,7 @@ class Anchor:
             exp (AnchorCandidate): The explanation of the original instance.
 
         &#34;&#34;&#34;
+        self.seed = seed
         np.random.seed(seed)
 
         # in case args are empty
@@ -111,7 +114,9 @@ class Anchor:
         if method_specific is None:
             method_specific = {}
 
-        self.kl_lucb = KL_LUCB(eps=epsilon, batch_size=batch_size, verbose=verbose)
+        self.kl_lucb = KL_LUCB(
+            eps=epsilon, delta=delta, batch_size=batch_size, verbose=verbose
+        )
         self.sampler = Sampler.create(self.tasktype, input, predict_fn, task_specific)
 
         self.batch_size = batch_size
@@ -129,6 +134,7 @@ class Anchor:
             exp = self.__beam_anchor(**method_specific)
         elif method == &#34;smac&#34;:
             logging.info(&#34; Start SMAC Search&#34;)
+
             exp = self.__smac_anchor(**method_specific)
 
         return exp
@@ -223,6 +229,7 @@ class Anchor:
 
         lb = KL_LUCB.dlow_bernoulli(prec, beta / max(candidate.n_samples, 1))
         ub = KL_LUCB.dup_bernoulli(prec, beta / max(candidate.n_samples, 1))
+
         while (prec &gt;= dconf and lb &lt; dconf - eps_stop) or (
             prec &lt; dconf and ub &gt;= dconf + eps_stop
         ):
@@ -235,9 +242,7 @@ class Anchor:
         return prec &gt;= dconf and lb &gt; dconf - eps_stop
 
     def __greedy_anchor(
-        self,
-        desired_confidence: float = 1,
-        min_coverage: float = 0.2,
+        self, desired_confidence: float = 1, min_coverage: float = 0.2,
     ):
         &#34;&#34;&#34;
         Greedy Approach to calculate the shortest anchor, which fullfills the precision constraint EQ3.
@@ -257,6 +262,7 @@ class Anchor:
         ):
             candidates = self.generate_candidates([anchor], min_coverage)
 
+            # no more candiates return the best one so far
             if len(candidates) == 0:
                 break
 
@@ -265,9 +271,7 @@ class Anchor:
         return anchor
 
     def __beam_anchor(
-        self,
-        desired_confidence: float,
-        beam_size: int,
+        self, desired_confidence: float, beam_size: int,
     ) -&gt; AnchorCandidate:
         &#34;&#34;&#34;
         Beam search algorithm to find anchor.
@@ -287,10 +291,10 @@ class Anchor:
         while current_anchor_size &lt; max_anchor_size:
             # Generate candidates
             candidates = self.generate_candidates(
-                best_of_size[current_anchor_size - 1],
-                best_candidate.coverage,
+                best_of_size[current_anchor_size - 1], best_candidate.coverage,
             )
 
+            # no more candiates return best one so far
             if len(candidates) == 0:
                 break
 
@@ -300,6 +304,8 @@ class Anchor:
 
             best_of_size[current_anchor_size] = best_candidates
 
+            # update best candiate when its valid and has a better
+            # coverage.
             for c in best_candidates:
                 if (
                     self.__check_valid_candidate(
@@ -317,16 +323,19 @@ class Anchor:
 
         return best_candidate
 
-    def __smac_anchor(self, run_time: int) -&gt; AnchorCandidate:
+    def __smac_anchor(
+        self, run_time: int, optim: Callable[[AnchorCandidate], float] = None
+    ) -&gt; AnchorCandidate:
         &#34;&#34;&#34;
         Utilites smac to find an anchor.
 
         Args:
-            run_time (int): Amount of CPU-time to run the smac.
-
+            run_time (int): Amount of wallclock time to run the optimization for.
         Returns:
             AnchorCandidate: best found anchor
         &#34;&#34;&#34;
+
+        self.smac_optim_func = optim if optim is not None else None
 
         # create config space
         configspace = ConfigurationSpace()
@@ -339,7 +348,7 @@ class Anchor:
         scenario = Scenario(
             {
                 &#34;run_obj&#34;: &#34;quality&#34;,
-                &#34;algo_runs_timelimit&#34;: run_time,
+                &#34;wallclock_limit&#34;: run_time,
                 &#34;cs&#34;: configspace,
                 &#34;deterministic&#34;: &#34;true&#34;,  # each config gets evaluated once, other option would be to track candidates and average precision / coverage
             }
@@ -349,12 +358,10 @@ class Anchor:
         smac = SMAC4BB(
             scenario=scenario,
             tae_runner=self.smac_optimize,
-            rng=np.random.RandomState(42),  # TODO change to global seed
+            rng=np.random.RandomState(self.seed),
         )
-        best_mask = (
-            smac.optimize()
-        )  # TODO should also return found precision and coverage - Maybe we can get this to return the full candidate
-        # return candidate
+        best_mask = smac.optimize()
+
         feature_mask = [int(f_idx) for f_idx, mv in best_mask.items() if mv]
         stats = smac.runhistory.data[
             next(reversed(smac.runhistory.data))
@@ -374,15 +381,27 @@ class Anchor:
             config (Configspace): Current feature configuration to be evalauted.
         &#34;&#34;&#34;
         feature_mask = [int(f_idx) for f_idx, mv in config.items() if mv]
+
         # create candidate from config which is the feature mask to evaluate
         candidate = AnchorCandidate(feature_mask)
+
         # calculate expected precision
         candidate, _ = self.sampler.sample(candidate, self.batch_size)
         candidate.coverage = self.__calculate_coverage(candidate)
 
         info = {&#34;precision&#34;: candidate.precision, &#34;coverage&#34;: candidate.coverage}
 
-        return ((1 - candidate.precision) + (1 - candidate.coverage)) / 2, info</code></pre>
+        if self.smac_optim_func is not None:
+            return self.smac_optim_func(candidate), info
+        else:
+            return (
+                (
+                    (1 - candidate.precision)
+                    + (len(candidate.feature_mask) / self.sampler.num_features)
+                )
+                / 2,
+                info,
+            )</code></pre>
 </details>
 </section>
 <section>
@@ -449,7 +468,9 @@ class Anchor:
             method (String): Defines the optimization function. Can be (``greedy``), (``beam``) or (``smac``).
             dataset (np.array): The dataset for permutation. Could be images for image task or tabular data for tabular task.
             task_specific (dict): Task specific arguments. For tabular this includes the (``column_names``) and (``dataset``) argument. For images it includes (``dataset``).
-            method_specific (dict): Optimization method specific arguments. For Beam Search this includes (``beam_size``) and (``desired_confidence``). For greedy this includes (``desired_confidence``). For Smac this includes (``run_time``).
+            method_specific (dict): Optimization method specific arguments. For Beam Search this includes (``beam_size``) and (``desired_confidence``). 
+                For greedy this includes (``desired_confidence``). For Smac this includes (``run_time``) in seconds and (``optim``). 
+                Optim is a function with the signature AnchorCandiate -&gt; float that will be minimized.
             num_coverage_samples (int): Number of coverage samples
             desired_confidence (float): desired precision confidence for the anchor.
             epsilon (float)
@@ -460,6 +481,7 @@ class Anchor:
             exp (AnchorCandidate): The explanation of the original instance.
 
         &#34;&#34;&#34;
+        self.seed = seed
         np.random.seed(seed)
 
         # in case args are empty
@@ -469,7 +491,9 @@ class Anchor:
         if method_specific is None:
             method_specific = {}
 
-        self.kl_lucb = KL_LUCB(eps=epsilon, batch_size=batch_size, verbose=verbose)
+        self.kl_lucb = KL_LUCB(
+            eps=epsilon, delta=delta, batch_size=batch_size, verbose=verbose
+        )
         self.sampler = Sampler.create(self.tasktype, input, predict_fn, task_specific)
 
         self.batch_size = batch_size
@@ -487,6 +511,7 @@ class Anchor:
             exp = self.__beam_anchor(**method_specific)
         elif method == &#34;smac&#34;:
             logging.info(&#34; Start SMAC Search&#34;)
+
             exp = self.__smac_anchor(**method_specific)
 
         return exp
@@ -581,6 +606,7 @@ class Anchor:
 
         lb = KL_LUCB.dlow_bernoulli(prec, beta / max(candidate.n_samples, 1))
         ub = KL_LUCB.dup_bernoulli(prec, beta / max(candidate.n_samples, 1))
+
         while (prec &gt;= dconf and lb &lt; dconf - eps_stop) or (
             prec &lt; dconf and ub &gt;= dconf + eps_stop
         ):
@@ -593,9 +619,7 @@ class Anchor:
         return prec &gt;= dconf and lb &gt; dconf - eps_stop
 
     def __greedy_anchor(
-        self,
-        desired_confidence: float = 1,
-        min_coverage: float = 0.2,
+        self, desired_confidence: float = 1, min_coverage: float = 0.2,
     ):
         &#34;&#34;&#34;
         Greedy Approach to calculate the shortest anchor, which fullfills the precision constraint EQ3.
@@ -615,6 +639,7 @@ class Anchor:
         ):
             candidates = self.generate_candidates([anchor], min_coverage)
 
+            # no more candiates return the best one so far
             if len(candidates) == 0:
                 break
 
@@ -623,9 +648,7 @@ class Anchor:
         return anchor
 
     def __beam_anchor(
-        self,
-        desired_confidence: float,
-        beam_size: int,
+        self, desired_confidence: float, beam_size: int,
     ) -&gt; AnchorCandidate:
         &#34;&#34;&#34;
         Beam search algorithm to find anchor.
@@ -645,10 +668,10 @@ class Anchor:
         while current_anchor_size &lt; max_anchor_size:
             # Generate candidates
             candidates = self.generate_candidates(
-                best_of_size[current_anchor_size - 1],
-                best_candidate.coverage,
+                best_of_size[current_anchor_size - 1], best_candidate.coverage,
             )
 
+            # no more candiates return best one so far
             if len(candidates) == 0:
                 break
 
@@ -658,6 +681,8 @@ class Anchor:
 
             best_of_size[current_anchor_size] = best_candidates
 
+            # update best candiate when its valid and has a better
+            # coverage.
             for c in best_candidates:
                 if (
                     self.__check_valid_candidate(
@@ -675,16 +700,19 @@ class Anchor:
 
         return best_candidate
 
-    def __smac_anchor(self, run_time: int) -&gt; AnchorCandidate:
+    def __smac_anchor(
+        self, run_time: int, optim: Callable[[AnchorCandidate], float] = None
+    ) -&gt; AnchorCandidate:
         &#34;&#34;&#34;
         Utilites smac to find an anchor.
 
         Args:
-            run_time (int): Amount of CPU-time to run the smac.
-
+            run_time (int): Amount of wallclock time to run the optimization for.
         Returns:
             AnchorCandidate: best found anchor
         &#34;&#34;&#34;
+
+        self.smac_optim_func = optim if optim is not None else None
 
         # create config space
         configspace = ConfigurationSpace()
@@ -697,7 +725,7 @@ class Anchor:
         scenario = Scenario(
             {
                 &#34;run_obj&#34;: &#34;quality&#34;,
-                &#34;algo_runs_timelimit&#34;: run_time,
+                &#34;wallclock_limit&#34;: run_time,
                 &#34;cs&#34;: configspace,
                 &#34;deterministic&#34;: &#34;true&#34;,  # each config gets evaluated once, other option would be to track candidates and average precision / coverage
             }
@@ -707,12 +735,10 @@ class Anchor:
         smac = SMAC4BB(
             scenario=scenario,
             tae_runner=self.smac_optimize,
-            rng=np.random.RandomState(42),  # TODO change to global seed
+            rng=np.random.RandomState(self.seed),
         )
-        best_mask = (
-            smac.optimize()
-        )  # TODO should also return found precision and coverage - Maybe we can get this to return the full candidate
-        # return candidate
+        best_mask = smac.optimize()
+
         feature_mask = [int(f_idx) for f_idx, mv in best_mask.items() if mv]
         stats = smac.runhistory.data[
             next(reversed(smac.runhistory.data))
@@ -732,15 +758,27 @@ class Anchor:
             config (Configspace): Current feature configuration to be evalauted.
         &#34;&#34;&#34;
         feature_mask = [int(f_idx) for f_idx, mv in config.items() if mv]
+
         # create candidate from config which is the feature mask to evaluate
         candidate = AnchorCandidate(feature_mask)
+
         # calculate expected precision
         candidate, _ = self.sampler.sample(candidate, self.batch_size)
         candidate.coverage = self.__calculate_coverage(candidate)
 
         info = {&#34;precision&#34;: candidate.precision, &#34;coverage&#34;: candidate.coverage}
 
-        return ((1 - candidate.precision) + (1 - candidate.coverage)) / 2, info</code></pre>
+        if self.smac_optim_func is not None:
+            return self.smac_optim_func(candidate), info
+        else:
+            return (
+                (
+                    (1 - candidate.precision)
+                    + (len(candidate.feature_mask) / self.sampler.num_features)
+                )
+                / 2,
+                info,
+            )</code></pre>
 </details>
 <h3>Class variables</h3>
 <dl>
@@ -785,7 +823,9 @@ class Anchor:
 <dt><strong><code>task_specific</code></strong> :&ensp;<code>dict</code></dt>
 <dd>Task specific arguments. For tabular this includes the (<code>column_names</code>) and (<code>dataset</code>) argument. For images it includes (<code>dataset</code>).</dd>
 <dt><strong><code>method_specific</code></strong> :&ensp;<code>dict</code></dt>
-<dd>Optimization method specific arguments. For Beam Search this includes (<code>beam_size</code>) and (<code>desired_confidence</code>). For greedy this includes (<code>desired_confidence</code>). For Smac this includes (<code>run_time</code>).</dd>
+<dd>Optimization method specific arguments. For Beam Search this includes (<code>beam_size</code>) and (<code>desired_confidence</code>).
+For greedy this includes (<code>desired_confidence</code>). For Smac this includes (<code>run_time</code>) in seconds and (<code>optim</code>).
+Optim is a function with the signature AnchorCandiate -&gt; float that will be minimized.</dd>
 <dt><strong><code>num_coverage_samples</code></strong> :&ensp;<code>int</code></dt>
 <dd>Number of coverage samples</dd>
 <dt><strong><code>desired_confidence</code></strong> :&ensp;<code>float</code></dt>
@@ -823,7 +863,9 @@ verbose (bool)</p>
         method (String): Defines the optimization function. Can be (``greedy``), (``beam``) or (``smac``).
         dataset (np.array): The dataset for permutation. Could be images for image task or tabular data for tabular task.
         task_specific (dict): Task specific arguments. For tabular this includes the (``column_names``) and (``dataset``) argument. For images it includes (``dataset``).
-        method_specific (dict): Optimization method specific arguments. For Beam Search this includes (``beam_size``) and (``desired_confidence``). For greedy this includes (``desired_confidence``). For Smac this includes (``run_time``).
+        method_specific (dict): Optimization method specific arguments. For Beam Search this includes (``beam_size``) and (``desired_confidence``). 
+            For greedy this includes (``desired_confidence``). For Smac this includes (``run_time``) in seconds and (``optim``). 
+            Optim is a function with the signature AnchorCandiate -&gt; float that will be minimized.
         num_coverage_samples (int): Number of coverage samples
         desired_confidence (float): desired precision confidence for the anchor.
         epsilon (float)
@@ -834,6 +876,7 @@ verbose (bool)</p>
         exp (AnchorCandidate): The explanation of the original instance.
 
     &#34;&#34;&#34;
+    self.seed = seed
     np.random.seed(seed)
 
     # in case args are empty
@@ -843,7 +886,9 @@ verbose (bool)</p>
     if method_specific is None:
         method_specific = {}
 
-    self.kl_lucb = KL_LUCB(eps=epsilon, batch_size=batch_size, verbose=verbose)
+    self.kl_lucb = KL_LUCB(
+        eps=epsilon, delta=delta, batch_size=batch_size, verbose=verbose
+    )
     self.sampler = Sampler.create(self.tasktype, input, predict_fn, task_specific)
 
     self.batch_size = batch_size
@@ -861,6 +906,7 @@ verbose (bool)</p>
         exp = self.__beam_anchor(**method_specific)
     elif method == &#34;smac&#34;:
         logging.info(&#34; Start SMAC Search&#34;)
+
         exp = self.__smac_anchor(**method_specific)
 
     return exp</code></pre>
@@ -949,15 +995,27 @@ to each previous anchor feature mask.</p>
         config (Configspace): Current feature configuration to be evalauted.
     &#34;&#34;&#34;
     feature_mask = [int(f_idx) for f_idx, mv in config.items() if mv]
+
     # create candidate from config which is the feature mask to evaluate
     candidate = AnchorCandidate(feature_mask)
+
     # calculate expected precision
     candidate, _ = self.sampler.sample(candidate, self.batch_size)
     candidate.coverage = self.__calculate_coverage(candidate)
 
     info = {&#34;precision&#34;: candidate.precision, &#34;coverage&#34;: candidate.coverage}
 
-    return ((1 - candidate.precision) + (1 - candidate.coverage)) / 2, info</code></pre>
+    if self.smac_optim_func is not None:
+        return self.smac_optim_func(candidate), info
+    else:
+        return (
+            (
+                (1 - candidate.precision)
+                + (len(candidate.feature_mask) / self.sampler.num_features)
+            )
+            / 2,
+            info,
+        )</code></pre>
 </details>
 </dd>
 <dt id="iml-ws21-projects-risingnumpygods.Anchor.anchor.Anchor.visualize"><code class="name flex">

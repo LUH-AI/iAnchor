@@ -80,6 +80,18 @@ class ImageVisualizer(Visualizer):
     def visualize(
         self, anchor: AnchorCandidate, original_instance: np.array, features: np.array
     ):
+        &#34;&#34;&#34;
+        Visualizes the image anchor
+
+        Args:
+            anchor (AnchorCandidate): AnchorCandiate which feature masks is used to explain the instance.
+            original_instance (np.array): (M, N[, 3]) image that is going to explained.
+            features (np.array): Segments of the original image.
+
+        Returns:
+            (np.ndarray): (M, N, 3) array of floats. 
+            An image in which the boundaries between labels are superimposed on the original image.
+        &#34;&#34;&#34;
         idxs = np.argwhere(~np.isin(features, anchor.feature_mask))
         mask = features.copy()
         mask[idxs[:, 0], idxs[:, 1]] = 0
@@ -92,14 +104,23 @@ class ImageVisualizer(Visualizer):
 
 class TextVisualizer(Visualizer):
     &#34;&#34;&#34;
-    Visalizer for text anchors.
+    Visualizer for text anchors. 
     &#34;&#34;&#34;
 
     type: Tasktype = Tasktype.TEXT
 
-    def visualize(
-        self, anchor: AnchorCandidate, original_instance: np.array, features: np.array
-    ):
+    def visualize(self, anchor: AnchorCandidate, original_instance: str, features: any):
+        &#34;&#34;&#34;
+        Visualizes the text anchor.
+
+        Args:
+            anchor (AnchorCandidate): AnchorCandiate which feature masks is used to explain the instance
+            original_instance (str): Text to be explained
+            features (np.array): Unused
+
+        Returns:
+            (str): Returns the orignial sentence with the importants words marked in yellow. 
+        &#34;&#34;&#34;
         explanation = []
         for i, word in enumerate(original_instance):
             if i in anchor.feature_mask:
@@ -120,6 +141,18 @@ class TabularVisualizer(Visualizer):
     def visualize(
         self, anchor: AnchorCandidate, original_instance: np.array, features: np.array
     ):
+        &#34;&#34;&#34;
+        Visualizes the tabular anchor.
+
+        Args:
+            anchor (AnchorCandidate): AnchorCandiate which feature masks is used to explain the instance
+            original_instance (str): Tabular instance (row) that is to be explained.
+            features (np.array): Columns names of the dataset.
+
+        Returns:
+            (str): Returns the orignial sentence with the importants words marked in yellow. 
+        &#34;&#34;&#34;
+
         exp_visu = [
             f&#34;{k} = {v}&#34;
             for i, (k, v) in enumerate(zip(features, original_instance))
@@ -157,6 +190,18 @@ class TabularVisualizer(Visualizer):
     def visualize(
         self, anchor: AnchorCandidate, original_instance: np.array, features: np.array
     ):
+        &#34;&#34;&#34;
+        Visualizes the image anchor
+
+        Args:
+            anchor (AnchorCandidate): AnchorCandiate which feature masks is used to explain the instance.
+            original_instance (np.array): (M, N[, 3]) image that is going to explained.
+            features (np.array): Segments of the original image.
+
+        Returns:
+            (np.ndarray): (M, N, 3) array of floats. 
+            An image in which the boundaries between labels are superimposed on the original image.
+        &#34;&#34;&#34;
         idxs = np.argwhere(~np.isin(features, anchor.feature_mask))
         mask = features.copy()
         mask[idxs[:, 0], idxs[:, 1]] = 0
@@ -183,7 +228,19 @@ class TabularVisualizer(Visualizer):
 <span>def <span class="ident">visualize</span></span>(<span>self, anchor: iml-ws21-projects-risingnumpygods.Anchor.candidate.AnchorCandidate, original_instance: <built-in function array>, features: <built-in function array>)</span>
 </code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>Visualizes the image anchor</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>anchor</code></strong> :&ensp;<code>AnchorCandidate</code></dt>
+<dd>AnchorCandiate which feature masks is used to explain the instance.</dd>
+<dt><strong><code>original_instance</code></strong> :&ensp;<code>np.array</code></dt>
+<dd>(M, N[, 3]) image that is going to explained.</dd>
+<dt><strong><code>features</code></strong> :&ensp;<code>np.array</code></dt>
+<dd>Segments of the original image.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>(np.ndarray): (M, N, 3) array of floats.
+An image in which the boundaries between labels are superimposed on the original image.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -191,6 +248,18 @@ class TabularVisualizer(Visualizer):
 <pre><code class="python">def visualize(
     self, anchor: AnchorCandidate, original_instance: np.array, features: np.array
 ):
+    &#34;&#34;&#34;
+    Visualizes the image anchor
+
+    Args:
+        anchor (AnchorCandidate): AnchorCandiate which feature masks is used to explain the instance.
+        original_instance (np.array): (M, N[, 3]) image that is going to explained.
+        features (np.array): Segments of the original image.
+
+    Returns:
+        (np.ndarray): (M, N, 3) array of floats. 
+        An image in which the boundaries between labels are superimposed on the original image.
+    &#34;&#34;&#34;
     idxs = np.argwhere(~np.isin(features, anchor.feature_mask))
     mask = features.copy()
     mask[idxs[:, 0], idxs[:, 1]] = 0
@@ -230,6 +299,18 @@ class TabularVisualizer(Visualizer):
     def visualize(
         self, anchor: AnchorCandidate, original_instance: np.array, features: np.array
     ):
+        &#34;&#34;&#34;
+        Visualizes the tabular anchor.
+
+        Args:
+            anchor (AnchorCandidate): AnchorCandiate which feature masks is used to explain the instance
+            original_instance (str): Tabular instance (row) that is to be explained.
+            features (np.array): Columns names of the dataset.
+
+        Returns:
+            (str): Returns the orignial sentence with the importants words marked in yellow. 
+        &#34;&#34;&#34;
+
         exp_visu = [
             f&#34;{k} = {v}&#34;
             for i, (k, v) in enumerate(zip(features, original_instance))
@@ -255,7 +336,18 @@ class TabularVisualizer(Visualizer):
 <span>def <span class="ident">visualize</span></span>(<span>self, anchor: iml-ws21-projects-risingnumpygods.Anchor.candidate.AnchorCandidate, original_instance: <built-in function array>, features: <built-in function array>)</span>
 </code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>Visualizes the tabular anchor.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>anchor</code></strong> :&ensp;<code>AnchorCandidate</code></dt>
+<dd>AnchorCandiate which feature masks is used to explain the instance</dd>
+<dt><strong><code>original_instance</code></strong> :&ensp;<code>str</code></dt>
+<dd>Tabular instance (row) that is to be explained.</dd>
+<dt><strong><code>features</code></strong> :&ensp;<code>np.array</code></dt>
+<dd>Columns names of the dataset.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>(str): Returns the orignial sentence with the importants words marked in yellow.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -263,6 +355,18 @@ class TabularVisualizer(Visualizer):
 <pre><code class="python">def visualize(
     self, anchor: AnchorCandidate, original_instance: np.array, features: np.array
 ):
+    &#34;&#34;&#34;
+    Visualizes the tabular anchor.
+
+    Args:
+        anchor (AnchorCandidate): AnchorCandiate which feature masks is used to explain the instance
+        original_instance (str): Tabular instance (row) that is to be explained.
+        features (np.array): Columns names of the dataset.
+
+    Returns:
+        (str): Returns the orignial sentence with the importants words marked in yellow. 
+    &#34;&#34;&#34;
+
     exp_visu = [
         f&#34;{k} = {v}&#34;
         for i, (k, v) in enumerate(zip(features, original_instance))
@@ -286,21 +390,30 @@ class TabularVisualizer(Visualizer):
 <span>class <span class="ident">TextVisualizer</span></span>
 </code></dt>
 <dd>
-<div class="desc"><p>Visalizer for text anchors.</p></div>
+<div class="desc"><p>Visualizer for text anchors.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">class TextVisualizer(Visualizer):
     &#34;&#34;&#34;
-    Visalizer for text anchors.
+    Visualizer for text anchors. 
     &#34;&#34;&#34;
 
     type: Tasktype = Tasktype.TEXT
 
-    def visualize(
-        self, anchor: AnchorCandidate, original_instance: np.array, features: np.array
-    ):
+    def visualize(self, anchor: AnchorCandidate, original_instance: str, features: any):
+        &#34;&#34;&#34;
+        Visualizes the text anchor.
+
+        Args:
+            anchor (AnchorCandidate): AnchorCandiate which feature masks is used to explain the instance
+            original_instance (str): Text to be explained
+            features (np.array): Unused
+
+        Returns:
+            (str): Returns the orignial sentence with the importants words marked in yellow. 
+        &#34;&#34;&#34;
         explanation = []
         for i, word in enumerate(original_instance):
             if i in anchor.feature_mask:
@@ -324,17 +437,37 @@ class TabularVisualizer(Visualizer):
 <h3>Methods</h3>
 <dl>
 <dt id="iml-ws21-projects-risingnumpygods.Anchor.visualizer.TextVisualizer.visualize"><code class="name flex">
-<span>def <span class="ident">visualize</span></span>(<span>self, anchor: iml-ws21-projects-risingnumpygods.Anchor.candidate.AnchorCandidate, original_instance: <built-in function array>, features: <built-in function array>)</span>
+<span>def <span class="ident">visualize</span></span>(<span>self, anchor: iml-ws21-projects-risingnumpygods.Anchor.candidate.AnchorCandidate, original_instance: str, features: <built-in function any>)</span>
 </code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>Visualizes the text anchor.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>anchor</code></strong> :&ensp;<code>AnchorCandidate</code></dt>
+<dd>AnchorCandiate which feature masks is used to explain the instance</dd>
+<dt><strong><code>original_instance</code></strong> :&ensp;<code>str</code></dt>
+<dd>Text to be explained</dd>
+<dt><strong><code>features</code></strong> :&ensp;<code>np.array</code></dt>
+<dd>Unused</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>(str): Returns the orignial sentence with the importants words marked in yellow.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def visualize(
-    self, anchor: AnchorCandidate, original_instance: np.array, features: np.array
-):
+<pre><code class="python">def visualize(self, anchor: AnchorCandidate, original_instance: str, features: any):
+    &#34;&#34;&#34;
+    Visualizes the text anchor.
+
+    Args:
+        anchor (AnchorCandidate): AnchorCandiate which feature masks is used to explain the instance
+        original_instance (str): Text to be explained
+        features (np.array): Unused
+
+    Returns:
+        (str): Returns the orignial sentence with the importants words marked in yellow. 
+    &#34;&#34;&#34;
     explanation = []
     for i, word in enumerate(original_instance):
         if i in anchor.feature_mask:

@@ -42,11 +42,22 @@ class AnchorCandidate:
     coverage: float = -1
 
     def update_precision(self, positives: int, n_samples: int):
+        &#34;&#34;&#34;Updatest the precision of this AnchorCandidate.
+
+        Args:
+            positives (int): Number of correct predictions
+            n_samples (int): Number of predictions
+        &#34;&#34;&#34;
         self.n_samples += n_samples
         self.positive_samples += positives
         self.precision = self.positive_samples / self.n_samples
 
     def append_feature(self, feature: int):
+        &#34;&#34;&#34;Appends feature index to feature mask.
+
+        Args:
+            feature (int): Index of the feature
+        &#34;&#34;&#34;
         self.feature_mask.append(feature)</code></pre>
 </details>
 </section>
@@ -82,11 +93,22 @@ class AnchorCandidate:
     coverage: float = -1
 
     def update_precision(self, positives: int, n_samples: int):
+        &#34;&#34;&#34;Updatest the precision of this AnchorCandidate.
+
+        Args:
+            positives (int): Number of correct predictions
+            n_samples (int): Number of predictions
+        &#34;&#34;&#34;
         self.n_samples += n_samples
         self.positive_samples += positives
         self.precision = self.positive_samples / self.n_samples
 
     def append_feature(self, feature: int):
+        &#34;&#34;&#34;Appends feature index to feature mask.
+
+        Args:
+            feature (int): Index of the feature
+        &#34;&#34;&#34;
         self.feature_mask.append(feature)</code></pre>
 </details>
 <h3>Class variables</h3>
@@ -118,12 +140,22 @@ class AnchorCandidate:
 <span>def <span class="ident">append_feature</span></span>(<span>self, feature: int)</span>
 </code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>Appends feature index to feature mask.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>feature</code></strong> :&ensp;<code>int</code></dt>
+<dd>Index of the feature</dd>
+</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def append_feature(self, feature: int):
+    &#34;&#34;&#34;Appends feature index to feature mask.
+
+    Args:
+        feature (int): Index of the feature
+    &#34;&#34;&#34;
     self.feature_mask.append(feature)</code></pre>
 </details>
 </dd>
@@ -131,12 +163,25 @@ class AnchorCandidate:
 <span>def <span class="ident">update_precision</span></span>(<span>self, positives: int, n_samples: int)</span>
 </code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>Updatest the precision of this AnchorCandidate.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>positives</code></strong> :&ensp;<code>int</code></dt>
+<dd>Number of correct predictions</dd>
+<dt><strong><code>n_samples</code></strong> :&ensp;<code>int</code></dt>
+<dd>Number of predictions</dd>
+</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def update_precision(self, positives: int, n_samples: int):
+    &#34;&#34;&#34;Updatest the precision of this AnchorCandidate.
+
+    Args:
+        positives (int): Number of correct predictions
+        n_samples (int): Number of predictions
+    &#34;&#34;&#34;
     self.n_samples += n_samples
     self.positive_samples += positives
     self.precision = self.positive_samples / self.n_samples</code></pre>
