@@ -24,22 +24,25 @@ class KL_LUCB:
     batch_size: int = 10
     verbose: bool = False
 
-    # TODO: fix type annotations and implement this shit
     def get_best_candidates(
-        self, candidates: list[AnchorCandidate], sampler: Sampler, top_n: int = 1,
+        self,
+        candidates: list[AnchorCandidate],
+        sampler: Sampler,
+        top_n: int = 1,
     ):
         """
         Find top-n anchor candidates with highest expected precision.
 
         Args:
-            candidates: list[AnchorCandidate]
-            sampler: Sampler
-            top_n: int
+            candidates (list[AnchorCandidate])
+            sampler (Sampler)
+            top_n (int)
         Returns:
-            best_candidates: list[AnchorCandidate]
+            best_candidates (list[AnchorCandidate])
         """
 
-        assert len(candidates) > 0
+        assert len(candidates) > 0, "No candidates"
+        assert top_n > 0, "top_n must be higher than 0"
 
         t = 1
         prec_ub = np.zeros(len(candidates))
@@ -50,8 +53,8 @@ class KL_LUCB:
         )
         prec_diff = prec_ub[ut] - prec_lb[lt]
         while prec_diff > self.eps:
-            candidates[ut], _, _ = sampler.sample(candidates[ut], self.batch_size)
-            candidates[lt], _, _ = sampler.sample(candidates[lt], self.batch_size)
+            candidates[ut], _ = sampler.sample(candidates[ut], self.batch_size)
+            candidates[lt], _ = sampler.sample(candidates[lt], self.batch_size)
 
             t += 1
             lt, ut, prec_lb, prec_ub = self.__update_bounds(
@@ -74,17 +77,17 @@ class KL_LUCB:
         top_n: int,
     ) -> Tuple[int, int, np.ndarray, np.ndarray]:
         """
-        Update current bounds for each candidate
+        Update current bounds
 
         Args:
-            candidates: list[AnchorCandidate]
-            lb: list[float]
+            candidates (list[AnchorCandidate])
+            lb (list[float])
             ub: list[float]
-            t: int
-            top_n: int
+            t (int)
+            top_n (int)
         Returns:
-            lt: int
-            ut: int
+            lt (int)
+            ut (int)
         """
 
         means = [c.precision for c in candidates]  # mean precision per candidate
@@ -117,7 +120,7 @@ class KL_LUCB:
     def compute_beta(n_features: int, t: int, delta: float):
         alpha = 1.1  # constant from paper
         k = 405.5  # constant from paper
-        temp = np.log(k * n_features * (t ** alpha) / delta)
+        temp = np.log(k * n_features * (t**alpha) / delta)
 
         return temp + np.log(temp)
 
@@ -154,4 +157,3 @@ class KL_LUCB:
         q = min(0.9999999999999999, max(0.0000001, q))
 
         return p * np.log(float(p) / q) + (1 - p) * np.log(float(1 - p) / (1 - q))
-
