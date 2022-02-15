@@ -28,7 +28,7 @@ To install the required packages we recommend using [Conda](https://docs.conda.i
    ```
 2. Install conda environment
    ```sh
-   conda env create -f iAnchor
+   conda env create -f environment.yml
    ```
 3. Activate the environment
    ```sh
