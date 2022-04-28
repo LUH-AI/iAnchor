@@ -22,23 +22,23 @@ To install the required packages we recommend using [Conda](https://docs.conda.i
 
 ### Installation
 
-1. Clone the repo
+1. Install conda environment
    ```sh
-   git clone https://github.com/automl-classroom/iml-ws21-projects-risingnumpygods.git
+   conda create -n iAnchor python=3.9
    ```
-2. Install conda environment
-   ```sh
-   conda env create -f environment.yml
-   ```
-3. Activate the environment
+2. Activate the environment
    ```sh
    conda activate iAnchor
+   ```
+3. Install from pypi
+   ```sh
+   pip install ianchor
    ```
 
 ### Tests
 1. Go to the project directory and run
    ```sh
-    pytest tests/*
+   pytest tests/*
    ```
 
 <!-- USAGE EXAMPLES -->

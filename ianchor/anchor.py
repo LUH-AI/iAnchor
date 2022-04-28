@@ -1,11 +1,12 @@
 import logging
 
-from Anchor.visualizer import Visualizer
+from ianchor.visualizer import Visualizer
 
 logging.basicConfig(level=logging.INFO)
+from typing import Callable, Optional, Protocol, Tuple, Union
+
 from dataclasses import dataclass, field
 from enum import Enum, auto
-from typing import Callable, Optional, Protocol, Tuple, Union
 
 import numpy as np
 from ConfigSpace import ConfigurationSpace
@@ -14,11 +15,10 @@ from skimage.segmentation import quickshift
 from smac.facade.smac_bb_facade import SMAC4BB
 from smac.scenario.scenario import Scenario
 
-from Anchor.bandit import KL_LUCB
-from Anchor.candidate import AnchorCandidate
-from Anchor.sampler import Sampler, Tasktype
-
-from .visualizer import Visualizer
+from ianchor.bandit import KL_LUCB
+from ianchor.candidate import AnchorCandidate
+from ianchor.sampler import Sampler, Tasktype
+from ianchor.visualizer import Visualizer
 
 
 @dataclass()
@@ -63,8 +63,8 @@ class Anchor:
             method (String): Defines the optimization function. Can be (``greedy``), (``beam``) or (``smac``).
             dataset (np.array): The dataset for permutation. Could be images for image task or tabular data for tabular task.
             task_specific (dict): Task specific arguments. For tabular this includes the (``column_names``) and (``dataset``) argument. For images it includes (``dataset``).
-            method_specific (dict): Optimization method specific arguments. For Beam Search this includes (``beam_size``) and (``desired_confidence``). 
-                For greedy this includes (``desired_confidence``). For Smac this includes (``run_time``) in seconds and (``optim``). 
+            method_specific (dict): Optimization method specific arguments. For Beam Search this includes (``beam_size``) and (``desired_confidence``).
+                For greedy this includes (``desired_confidence``). For Smac this includes (``run_time``) in seconds and (``optim``).
                 Optim is a function with the signature AnchorCandiate -> float that will be minimized.
             num_coverage_samples (int): Number of coverage samples
             desired_confidence (float): desired precision confidence for the anchor.
@@ -86,9 +86,7 @@ class Anchor:
         if method_specific is None:
             method_specific = {}
 
-        self.kl_lucb = KL_LUCB(
-            eps=epsilon, delta=delta, batch_size=batch_size, verbose=verbose
-        )
+        self.kl_lucb = KL_LUCB(eps=epsilon, delta=delta, batch_size=batch_size, verbose=verbose)
         self.sampler = Sampler.create(self.tasktype, input, predict_fn, task_specific)
 
         self.batch_size = batch_size
@@ -242,9 +240,7 @@ class Anchor:
 
         return anchor
 
-    def __beam_anchor(
-        self, desired_confidence: float, beam_size: int,
-    ) -> AnchorCandidate:
+    def __beam_anchor(self, desired_confidence: float, beam_size: int,) -> AnchorCandidate:
         """
         Beam search algorithm to find anchor.
 
@@ -328,21 +324,15 @@ class Anchor:
 
         # create optimizer
         smac = SMAC4BB(
-            scenario=scenario,
-            tae_runner=self.smac_optimize,
-            rng=np.random.RandomState(self.seed),
+            scenario=scenario, tae_runner=self.smac_optimize, rng=np.random.RandomState(self.seed),
         )
         best_mask = smac.optimize()
 
         feature_mask = [int(f_idx) for f_idx, mv in best_mask.items() if mv]
-        stats = smac.runhistory.data[
-            next(reversed(smac.runhistory.data))
-        ].additional_info
+        stats = smac.runhistory.data[next(reversed(smac.runhistory.data))].additional_info
 
         return AnchorCandidate(
-            feature_mask=feature_mask,
-            precision=stats["precision"],
-            coverage=stats["coverage"],
+            feature_mask=feature_mask, precision=stats["precision"], coverage=stats["coverage"],
         )
 
     def smac_optimize(self, config):
@@ -374,4 +364,3 @@ class Anchor:
                 / 2,
                 info,
             )
-

@@ -1,11 +1,12 @@
+from typing import Callable, Tuple
+
 import logging
 from dataclasses import dataclass, field
-from typing import Callable, Tuple
 
 import numpy as np
 
-from .candidate import AnchorCandidate
-from .sampler import Sampler
+from ianchor.candidate import AnchorCandidate
+from ianchor.sampler import Sampler
 
 
 @dataclass(frozen=True)
@@ -25,10 +26,7 @@ class KL_LUCB:
     verbose: bool = False
 
     def get_best_candidates(
-        self,
-        candidates: list[AnchorCandidate],
-        sampler: Sampler,
-        top_n: int = 1,
+        self, candidates: list[AnchorCandidate], sampler: Sampler, top_n: int = 1,
     ):
         """
         Find top-n anchor candidates with highest expected precision.
@@ -48,18 +46,14 @@ class KL_LUCB:
         prec_ub = np.zeros(len(candidates))
         prec_lb = np.zeros(len(candidates))
 
-        lt, ut, prec_lb, prec_ub = self.__update_bounds(
-            candidates, prec_lb, prec_ub, t, top_n
-        )
+        lt, ut, prec_lb, prec_ub = self.__update_bounds(candidates, prec_lb, prec_ub, t, top_n)
         prec_diff = prec_ub[ut] - prec_lb[lt]
         while prec_diff > self.eps:
             candidates[ut], _ = sampler.sample(candidates[ut], self.batch_size)
             candidates[lt], _ = sampler.sample(candidates[lt], self.batch_size)
 
             t += 1
-            lt, ut, prec_lb, prec_ub = self.__update_bounds(
-                candidates, prec_lb, prec_ub, t, top_n
-            )
+            lt, ut, prec_lb, prec_ub = self.__update_bounds(candidates, prec_lb, prec_ub, t, top_n)
             prec_diff = prec_ub[ut] - prec_lb[lt]
 
         best_candidates_idxs = np.argsort([c.precision for c in candidates])[
@@ -100,13 +94,9 @@ class KL_LUCB:
         )  # divide list into the top_n best candidates and the rest
 
         for f in j:
-            lb[f] = KL_LUCB.dlow_bernoulli(
-                means[f], beta / max(candidates[f].n_samples, 1)
-            )
+            lb[f] = KL_LUCB.dlow_bernoulli(means[f], beta / max(candidates[f].n_samples, 1))
         for f in nj:
-            ub[f] = KL_LUCB.dup_bernoulli(
-                means[f], beta / max(candidates[f].n_samples, 1)
-            )
+            ub[f] = KL_LUCB.dup_bernoulli(means[f], beta / max(candidates[f].n_samples, 1))
 
         ut = nj[np.argmax(ub[nj])] if len(nj) != 0 else 0
         # candidate where upper bound of candidate is maximal
@@ -120,7 +110,7 @@ class KL_LUCB:
     def compute_beta(n_features: int, t: int, delta: float):
         alpha = 1.1  # constant from paper
         k = 405.5  # constant from paper
-        temp = np.log(k * n_features * (t**alpha) / delta)
+        temp = np.log(k * n_features * (t ** alpha) / delta)
 
         return temp + np.log(temp)
 
