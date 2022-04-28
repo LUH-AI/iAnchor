@@ -1,7 +1,8 @@
+from typing import Callable, Optional, Protocol, Tuple, Union
+
 import logging
 from dataclasses import dataclass, field
 from enum import Enum, auto
-from typing import Callable, Optional, Protocol, Tuple, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -10,7 +11,7 @@ import torch
 from skimage.segmentation import quickshift
 from transformers import DistilBertForMaskedLM, DistilBertTokenizer
 
-from .candidate import AnchorCandidate
+from ianchor.candidate import AnchorCandidate
 
 
 def exp_normalize(x):
@@ -48,12 +49,7 @@ class Sampler:
 
     @classmethod
     def create(
-        cls,
-        type: Tasktype,
-        input: any,
-        predict_fn: Callable,
-        task_specific: dict,
-        **kwargs
+        cls, type: Tasktype, input: any, predict_fn: Callable, task_specific: dict, **kwargs
     ):
         """
         Creates subclass depending on typ.
@@ -82,11 +78,7 @@ class TabularSampler(Sampler):
     type: Tasktype = Tasktype.TABULAR
 
     def __init__(
-        self,
-        input: any,
-        predict_fn: Callable[[any], np.array],
-        dataset: any,
-        column_names: list,
+        self, input: any, predict_fn: Callable[[any], np.array], dataset: any, column_names: list,
     ):
         """
         Initialises TabularSampler with the given
@@ -119,10 +111,7 @@ class TabularSampler(Sampler):
         ), "column_names length must match dataset column dimension."
 
     def sample(
-        self,
-        candidate: AnchorCandidate,
-        num_samples: int,
-        calculate_labels: bool = True,
+        self, candidate: AnchorCandidate, num_samples: int, calculate_labels: bool = True,
     ) -> Tuple[AnchorCandidate, np.ndarray]:
         """
         Generates num_samples samples by choosing random values
@@ -144,9 +133,7 @@ class TabularSampler(Sampler):
             assert "Batch size must be smaller or equal to dataset rows."
 
         # pertubate
-        sample_idxs = np.random.choice(
-            self.dataset.shape[0], size=num_samples, replace=False
-        )
+        sample_idxs = np.random.choice(self.dataset.shape[0], size=num_samples, replace=False)
 
         # fixiate feature mask
         samples = np.copy(self.dataset[sample_idxs])
@@ -179,9 +166,7 @@ class ImageSampler(Sampler):
 
     type: Tasktype = Tasktype.IMAGE
 
-    def __init__(
-        self, input: any, predict_fn: Callable[[any], np.array], dataset: any = None
-    ):
+    def __init__(self, input: any, predict_fn: Callable[[any], np.array], dataset: any = None):
         """
         Initialises ImageSampler with the given
         predict_fn, input and image dataset.
@@ -205,9 +190,7 @@ class ImageSampler(Sampler):
 
         input = input.clone().cpu().detach().numpy()
         # run segmentation on the image
-        self.features = quickshift(
-            input.astype(np.double), kernel_size=4, max_dist=200, ratio=0.2
-        )
+        self.features = quickshift(input.astype(np.double), kernel_size=4, max_dist=200, ratio=0.2)
 
         # parameters from original implementation
         segment_features = np.unique(self.features)
@@ -225,10 +208,7 @@ class ImageSampler(Sampler):
         self.dataset = dataset
 
     def sample(
-        self,
-        candidate: AnchorCandidate,
-        num_samples: int,
-        calculate_labels: bool = True,
+        self, candidate: AnchorCandidate, num_samples: int, calculate_labels: bool = True,
     ) -> Tuple[AnchorCandidate, np.ndarray]:
         """
         Generates num_samples samples by choosing random values
@@ -341,7 +321,7 @@ class ImageSampler(Sampler):
         Pixel which are outmasked by the mask are replaced by the corresponding superpixel pixel.
 
         Args:
-            feature_mask (np.ndarray): Feature mask to generate picture with 
+            feature_mask (np.ndarray): Feature mask to generate picture with
 
         Returns:
             np.array: Generated image.
@@ -445,9 +425,7 @@ class TextSampler(Sampler):
             output = self.bert(input)[0]
 
         # get idx for mask token
-        mask_token_idx = (
-            np.array(encoded_text) == self.tokenizer.mask_token_id
-        ).nonzero()[0]
+        mask_token_idx = (np.array(encoded_text) == self.tokenizer.mask_token_id).nonzero()[0]
 
         # predict top 500 for each masked word
         preds_per_word = []
@@ -459,10 +437,7 @@ class TextSampler(Sampler):
         return preds_per_word
 
     def sample(
-        self,
-        candidate: AnchorCandidate,
-        num_samples: int,
-        calculate_labels: bool = True,
+        self, candidate: AnchorCandidate, num_samples: int, calculate_labels: bool = True,
     ) -> Tuple[AnchorCandidate, np.ndarray]:
         """
         Generates num_samples samples by choosing if words
@@ -486,9 +461,7 @@ class TextSampler(Sampler):
 
             # decide if we should mask the word or not
             prob = self.pr[word]
-            feature_masks[:, idx] = np.random.choice(
-                [0, 1], num_samples, p=[1 - prob, prob]
-            )
+            feature_masks[:, idx] = np.random.choice([0, 1], num_samples, p=[1 - prob, prob])
 
         # unmask words in candidate mask
         feature_masks[:, candidate.feature_mask] = 1
@@ -548,9 +521,7 @@ class TextSampler(Sampler):
         Returns:
             Tuple[AnchorCandidate, np.ndarray, np.ndarray]: Structure [AnchorCandidate, feature_masks, None]
         """
-        sentences = np.apply_along_axis(self.__generate_sentence, 1, data).reshape(
-            -1, 1
-        )
+        sentences = np.apply_along_axis(self.__generate_sentence, 1, data).reshape(-1, 1)
 
         # predict pertubed sentences
         preds = self.predict_fn(sentences.flatten().tolist())

@@ -4,8 +4,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 from skimage.segmentation import mark_boundaries
 
-from .candidate import AnchorCandidate
-from .sampler import Tasktype
+from ianchor.candidate import AnchorCandidate
+from ianchor.sampler import Tasktype
 
 
 class Visualizer:
@@ -37,9 +37,7 @@ class Visualizer:
         if type not in cls.subclasses:
             raise ValueError("Bad message type {}".format(type))
 
-        return cls.subclasses[type](
-            **kwargs
-        )  # every sampler needs input and predict function
+        return cls.subclasses[type](**kwargs)  # every sampler needs input and predict function
 
 
 class ImageVisualizer(Visualizer):
@@ -49,9 +47,7 @@ class ImageVisualizer(Visualizer):
 
     type: Tasktype = Tasktype.IMAGE
 
-    def visualize(
-        self, anchor: AnchorCandidate, original_instance: np.array, features: np.array
-    ):
+    def visualize(self, anchor: AnchorCandidate, original_instance: np.array, features: np.array):
         """
         Visualizes the image anchor
 
@@ -61,22 +57,20 @@ class ImageVisualizer(Visualizer):
             features (np.array): Segments of the original image.
 
         Returns:
-            (np.ndarray): (M, N, 3) array of floats. 
+            (np.ndarray): (M, N, 3) array of floats.
             An image in which the boundaries between labels are superimposed on the original image.
         """
         idxs = np.argwhere(~np.isin(features, anchor.feature_mask))
         mask = features.copy()
         mask[idxs[:, 0], idxs[:, 1]] = 0
-        exp_visu = mark_boundaries(
-            original_instance, mask, mode="thick", outline_color=(0, 0, 0)
-        )
+        exp_visu = mark_boundaries(original_instance, mask, mode="thick", outline_color=(0, 0, 0))
 
         return exp_visu
 
 
 class TextVisualizer(Visualizer):
     """
-    Visualizer for text anchors. 
+    Visualizer for text anchors.
     """
 
     type: Tasktype = Tasktype.TEXT
@@ -91,7 +85,7 @@ class TextVisualizer(Visualizer):
             features (np.array): Unused
 
         Returns:
-            (str): Returns the orignial sentence with the importants words marked in yellow. 
+            (str): Returns the orignial sentence with the importants words marked in yellow.
         """
         explanation = []
         for i, word in enumerate(original_instance):
@@ -110,9 +104,7 @@ class TabularVisualizer(Visualizer):
 
     type: Tasktype = Tasktype.TABULAR
 
-    def visualize(
-        self, anchor: AnchorCandidate, original_instance: np.array, features: np.array
-    ):
+    def visualize(self, anchor: AnchorCandidate, original_instance: np.array, features: np.array):
         """
         Visualizes the tabular anchor.
 
@@ -122,7 +114,7 @@ class TabularVisualizer(Visualizer):
             features (np.array): Columns names of the dataset.
 
         Returns:
-            (str): Returns the orignial sentence with the importants words marked in yellow. 
+            (str): Returns the orignial sentence with the importants words marked in yellow.
         """
 
         exp_visu = [

@@ -31,4 +31,3 @@ class AnchorCandidate:
             feature (int): Index of the feature
         """
         self.feature_mask.append(feature)
-

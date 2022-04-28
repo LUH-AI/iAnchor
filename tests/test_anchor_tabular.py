@@ -19,9 +19,7 @@ def setup():
     data = np.genfromtxt("datasets/titanic.txt", delimiter=",")
     y_train = data[:, -1]
     X_train = data[:, :-1]
-    c = sklearn.ensemble.RandomForestClassifier(
-        n_estimators=100, n_jobs=5, random_state=123
-    )
+    c = sklearn.ensemble.RandomForestClassifier(n_estimators=100, n_jobs=5, random_state=123)
     c.fit(X_train, y_train)
     task_paras = {
         "dataset": X_train,
