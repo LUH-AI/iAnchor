@@ -33,7 +33,6 @@ class TabularSampler(Sampler):
             dataset (any): Tabular dataset from which samples will be collected. Expected to be discretized.
             column_names (list): Columns names of the dataset.
         """
-
         if dataset is None:
             assert "Dataset must be given for tabular explaination."
         if column_names is None:

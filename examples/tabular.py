@@ -47,7 +47,5 @@ if __name__ == "__main__":
         num_coverage_samples=100,
     )
 
-    exit()
-
     visu = explainer.visualize(anchor, X_train[759])
     print(visu)
