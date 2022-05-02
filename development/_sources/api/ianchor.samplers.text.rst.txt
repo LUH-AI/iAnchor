@@ -1,0 +1,29 @@
+ianchor.samplers.text
+=====================
+
+.. automodule:: ianchor.samplers.text
+
+   
+   
+   
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      TextSampler
+   
+   
+
+   
+   
+   
+
+
+

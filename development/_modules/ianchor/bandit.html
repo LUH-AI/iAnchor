@@ -1,0 +1,403 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ianchor.bandit &#8212; iAnchor Documentation 0.0.1 documentation</title>
+    
+  <link href="../../_static/css/theme.css" rel="stylesheet">
+  <link href="../../_static/css/index.ac9c05f7c49ca1e1f876c6e36360ea26.css" rel="stylesheet">
+
+    
+  <link rel="stylesheet"
+    href="../../_static/vendor/fontawesome/5.13.0/css/all.min.css">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="../../_static/vendor/fontawesome/5.13.0/webfonts/fa-solid-900.woff2">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="../../_static/vendor/fontawesome/5.13.0/webfonts/fa-brands-400.woff2">
+
+    
+      
+
+    
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-binder.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-dataframe.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-rendered-html.css" />
+    
+  <link rel="preload" as="script" href="../../_static/js/index.9ea38e314b9e6d9dab77.js">
+
+    <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="docsearch:language" content="None">
+    
+
+    <!-- Google Analytics -->
+    
+  </head>
+  <body data-spy="scroll" data-target="#bd-toc-nav" data-offset="80">
+    
+    <div class="container-fluid" id="banner"></div>
+
+    
+    <nav class="navbar navbar-light navbar-expand-lg bg-light fixed-top bd-navbar" id="navbar-main"><div class="container-xl">
+
+  <div id="navbar-start">
+    
+    
+  <a class="navbar-brand" href="../../index.html">
+  <!-- <p class="title">iAnchor Documentation</p> -->
+  </a>
+
+    
+  </div>
+
+  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbar-collapsible" aria-controls="navbar-collapsible" aria-expanded="false" aria-label="Toggle navigation">
+    <span class="navbar-toggler-icon"></span>
+  </button>
+
+  
+  <div id="navbar-collapsible" class="col-lg-9 collapse navbar-collapse">
+    <div id="navbar-center" class="mr-auto">
+      
+    </div>
+
+    <div id="navbar-end">
+      
+      <div class="navbar-end-item">
+        <ul id="navbar-icon-links" class="navbar-nav" aria-label="">
+        <li class="nav-item">
+          <a class="nav-link" href="https://github.com/LUH-AI/iAnchor" rel="noopener" target="_blank" title="GitHub">
+            <span><i class="fab fa-github-square"></i></span>
+            <label class="sr-only">GitHub</label>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="https://twitter.com/automl_org?lang=de" rel="noopener" target="_blank" title="Twitter">
+            <span><i class="fab fa-twitter-square"></i></span>
+            <label class="sr-only">Twitter</label>
+          </a>
+        </li>
+      </ul>
+      </div>
+      
+      <div class="navbar-end-item">
+        <form class="bd-search align-items-center" action="../../search.html" method="get"
+style="width: 100%;">
+  <i class="icon fas fa-search"></i>
+  <input type="search" class="form-control" name="q" id="search-input" placeholder="Search the docs ..." aria-label="Search the docs ..." autocomplete="off" >
+</form>
+
+      </div>
+      
+    </div>
+  </div>
+</div>
+    </nav>
+    
+
+    <div class="container-xl">
+      <div class="row">
+          
+            
+            <!-- Only show if we have sidebars configured, else just a small margin  -->
+            <div class="col-12 col-md-3 bd-sidebar"><h4 class="mt-0 mb-0">iAnchor Documentation</h4>
+<div class="mb-3">v0.0.1</div><nav class="bd-links" id="bd-docs-nav" aria-label="Main navigation">
+  <div class="bd-toc-item active">
+    <ul class="nav bd-sidenav">
+ <li class="toctree-l1">
+  <a class="reference internal" href="../../installation.html">
+   Installation
+  </a>
+ </li>
+ <li class="toctree-l1 has-children">
+  <a class="reference internal" href="../../examples/index.html">
+   Examples
+  </a>
+  <input class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" type="checkbox"/>
+  <label for="toctree-checkbox-1">
+   <i class="fas fa-chevron-down">
+   </i>
+  </label>
+  <ul>
+   <li class="toctree-l2">
+    <a class="reference internal" href="../../examples/tabular.html">
+     Tabular Explanation
+    </a>
+   </li>
+  </ul>
+ </li>
+ <li class="toctree-l1 has-children">
+  <a class="reference internal" href="../../basic_usage/index.html">
+   Basic Usage
+  </a>
+  <input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" type="checkbox"/>
+  <label for="toctree-checkbox-2">
+   <i class="fas fa-chevron-down">
+   </i>
+  </label>
+  <ul class="simple">
+  </ul>
+ </li>
+ <li class="toctree-l1 has-children">
+  <a class="reference internal" href="../../advanced_usage/index.html">
+   Advanced Usage
+  </a>
+  <input class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" type="checkbox"/>
+  <label for="toctree-checkbox-3">
+   <i class="fas fa-chevron-down">
+   </i>
+  </label>
+  <ul class="simple">
+  </ul>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="../../commands.html">
+   Helpful Commands
+  </a>
+ </li>
+ <li class="toctree-l1 has-children">
+  <a class="reference internal" href="../../api.html">
+   API References
+  </a>
+  <input class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" type="checkbox"/>
+  <label for="toctree-checkbox-4">
+   <i class="fas fa-chevron-down">
+   </i>
+  </label>
+  <ul>
+   <li class="toctree-l2">
+    <a class="reference internal" href="../../api/ianchor.html">
+     ianchor
+    </a>
+   </li>
+  </ul>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="../../glossary.html">
+   Glossary
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="../../faq.html">
+   Frequently Asked Questions
+  </a>
+ </li>
+</ul>
+
+  </div>
+</nav>
+            </div>
+            
+          
+
+          
+          <div class="d-none d-xl-block col-xl-2 bd-toc">
+            
+          </div>
+          
+
+          
+          
+            
+          
+          <main class="col-12 col-md-9 col-xl-7 py-md-5 pl-md-5 pr-md-4 bd-content" role="main">
+              
+              <div>
+                
+  <h1>Source code for ianchor.bandit</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Tuple</span>
+
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">from</span> <span class="nn">dataclasses</span> <span class="kn">import</span> <span class="n">dataclass</span><span class="p">,</span> <span class="n">field</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
+<span class="kn">from</span> <span class="nn">ianchor.candidate</span> <span class="kn">import</span> <span class="n">AnchorCandidate</span>
+<span class="kn">from</span> <span class="nn">ianchor.samplers</span> <span class="kn">import</span> <span class="n">Sampler</span>
+
+
+<div class="viewcode-block" id="KL_LUCB"><a class="viewcode-back" href="../../api/ianchor.bandit.html#ianchor.bandit.KL_LUCB">[docs]</a><span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">class</span> <span class="nc">KL_LUCB</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Multi armed bandit with lower and upper bound.</span>
+<span class="sd">    Used to find the anchor rule with the expected highest precision.</span>
+
+<span class="sd">    More information can be found in the following paper:</span>
+<span class="sd">    http://proceedings.mlr.press/v30/Kaufmann13.pdf</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c1"># default values from original paper</span>
+    <span class="n">eps</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.1</span>
+    <span class="n">delta</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.1</span>
+    <span class="n">batch_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span>
+    <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+
+<div class="viewcode-block" id="KL_LUCB.get_best_candidates"><a class="viewcode-back" href="../../api/ianchor.bandit.html#ianchor.bandit.KL_LUCB.get_best_candidates">[docs]</a>    <span class="k">def</span> <span class="nf">get_best_candidates</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">candidates</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">AnchorCandidate</span><span class="p">],</span> <span class="n">sampler</span><span class="p">:</span> <span class="n">Sampler</span><span class="p">,</span> <span class="n">top_n</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Find top-n anchor candidates with highest expected precision.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            candidates (list[AnchorCandidate])</span>
+<span class="sd">            sampler (Sampler)</span>
+<span class="sd">            top_n (int)</span>
+<span class="sd">        Returns:</span>
+<span class="sd">            best_candidates (list[AnchorCandidate])</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">candidates</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">&quot;No candidates&quot;</span>
+        <span class="k">assert</span> <span class="n">top_n</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">&quot;top_n must be higher than 0&quot;</span>
+
+        <span class="n">t</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="n">prec_ub</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">candidates</span><span class="p">))</span>
+        <span class="n">prec_lb</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">candidates</span><span class="p">))</span>
+
+        <span class="n">lt</span><span class="p">,</span> <span class="n">ut</span><span class="p">,</span> <span class="n">prec_lb</span><span class="p">,</span> <span class="n">prec_ub</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__update_bounds</span><span class="p">(</span><span class="n">candidates</span><span class="p">,</span> <span class="n">prec_lb</span><span class="p">,</span> <span class="n">prec_ub</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">top_n</span><span class="p">)</span>
+        <span class="n">prec_diff</span> <span class="o">=</span> <span class="n">prec_ub</span><span class="p">[</span><span class="n">ut</span><span class="p">]</span> <span class="o">-</span> <span class="n">prec_lb</span><span class="p">[</span><span class="n">lt</span><span class="p">]</span>
+        <span class="k">while</span> <span class="n">prec_diff</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">eps</span><span class="p">:</span>
+            <span class="n">candidates</span><span class="p">[</span><span class="n">ut</span><span class="p">],</span> <span class="n">_</span> <span class="o">=</span> <span class="n">sampler</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">candidates</span><span class="p">[</span><span class="n">ut</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span><span class="p">)</span>
+            <span class="n">candidates</span><span class="p">[</span><span class="n">lt</span><span class="p">],</span> <span class="n">_</span> <span class="o">=</span> <span class="n">sampler</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">candidates</span><span class="p">[</span><span class="n">lt</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span><span class="p">)</span>
+
+            <span class="n">t</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="n">lt</span><span class="p">,</span> <span class="n">ut</span><span class="p">,</span> <span class="n">prec_lb</span><span class="p">,</span> <span class="n">prec_ub</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__update_bounds</span><span class="p">(</span><span class="n">candidates</span><span class="p">,</span> <span class="n">prec_lb</span><span class="p">,</span> <span class="n">prec_ub</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">top_n</span><span class="p">)</span>
+            <span class="n">prec_diff</span> <span class="o">=</span> <span class="n">prec_ub</span><span class="p">[</span><span class="n">ut</span><span class="p">]</span> <span class="o">-</span> <span class="n">prec_lb</span><span class="p">[</span><span class="n">lt</span><span class="p">]</span>
+
+        <span class="n">best_candidates_idxs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">([</span><span class="n">c</span><span class="o">.</span><span class="n">precision</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">candidates</span><span class="p">])[</span>
+            <span class="o">-</span><span class="n">top_n</span><span class="p">:</span>
+        <span class="p">]</span>  <span class="c1"># use partioning</span>
+
+        <span class="k">return</span> <span class="p">[</span><span class="n">candidates</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="n">best_candidates_idxs</span><span class="p">]</span></div>
+
+    <span class="k">def</span> <span class="nf">__update_bounds</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">candidates</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">AnchorCandidate</span><span class="p">],</span>
+        <span class="n">lb</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">float</span><span class="p">],</span>
+        <span class="n">ub</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">float</span><span class="p">],</span>
+        <span class="n">t</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">top_n</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Update current bounds</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            candidates (List[AnchorCandidate])</span>
+<span class="sd">            lb (List[float])</span>
+<span class="sd">            ub: List[float]</span>
+<span class="sd">            t (int)</span>
+<span class="sd">            top_n (int)</span>
+<span class="sd">        Returns:</span>
+<span class="sd">            lt (int)</span>
+<span class="sd">            ut (int)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">means</span> <span class="o">=</span> <span class="p">[</span><span class="n">c</span><span class="o">.</span><span class="n">precision</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">candidates</span><span class="p">]</span>  <span class="c1"># mean precision per candidate</span>
+        <span class="n">sorted_means</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">means</span><span class="p">)</span>
+
+        <span class="n">beta</span> <span class="o">=</span> <span class="n">KL_LUCB</span><span class="o">.</span><span class="n">compute_beta</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">candidates</span><span class="p">),</span> <span class="n">t</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">delta</span><span class="p">)</span>
+        <span class="n">j</span><span class="p">,</span> <span class="n">nj</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">sorted_means</span><span class="p">[</span><span class="o">-</span><span class="n">top_n</span><span class="p">:],</span>
+            <span class="n">sorted_means</span><span class="p">[:</span><span class="o">-</span><span class="n">top_n</span><span class="p">],</span>
+        <span class="p">)</span>  <span class="c1"># divide list into the top_n best candidates and the rest</span>
+
+        <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">j</span><span class="p">:</span>
+            <span class="n">lb</span><span class="p">[</span><span class="n">f</span><span class="p">]</span> <span class="o">=</span> <span class="n">KL_LUCB</span><span class="o">.</span><span class="n">dlow_bernoulli</span><span class="p">(</span><span class="n">means</span><span class="p">[</span><span class="n">f</span><span class="p">],</span> <span class="n">beta</span> <span class="o">/</span> <span class="nb">max</span><span class="p">(</span><span class="n">candidates</span><span class="p">[</span><span class="n">f</span><span class="p">]</span><span class="o">.</span><span class="n">n_samples</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+        <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">nj</span><span class="p">:</span>
+            <span class="n">ub</span><span class="p">[</span><span class="n">f</span><span class="p">]</span> <span class="o">=</span> <span class="n">KL_LUCB</span><span class="o">.</span><span class="n">dup_bernoulli</span><span class="p">(</span><span class="n">means</span><span class="p">[</span><span class="n">f</span><span class="p">],</span> <span class="n">beta</span> <span class="o">/</span> <span class="nb">max</span><span class="p">(</span><span class="n">candidates</span><span class="p">[</span><span class="n">f</span><span class="p">]</span><span class="o">.</span><span class="n">n_samples</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+
+        <span class="n">ut</span> <span class="o">=</span> <span class="n">nj</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">ub</span><span class="p">[</span><span class="n">nj</span><span class="p">])]</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">nj</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">0</span> <span class="k">else</span> <span class="mi">0</span>
+        <span class="c1"># candidate where upper bound of candidate is maximal</span>
+        <span class="n">lt</span> <span class="o">=</span> <span class="n">j</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">argmin</span><span class="p">(</span><span class="n">lb</span><span class="p">[</span><span class="n">j</span><span class="p">])]</span>  <span class="c1"># candidate where lower bound of candidate is minimal</span>
+
+        <span class="k">return</span> <span class="n">lt</span><span class="p">,</span> <span class="n">ut</span><span class="p">,</span> <span class="n">lb</span><span class="p">,</span> <span class="n">ub</span>
+
+    <span class="c1"># Following part is completely based on the original implementation, since there is not much one could optimize or change</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">compute_beta</span><span class="p">(</span><span class="n">n_features</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">t</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">delta</span><span class="p">:</span> <span class="nb">float</span><span class="p">):</span>
+        <span class="n">alpha</span> <span class="o">=</span> <span class="mf">1.1</span>  <span class="c1"># constant from paper</span>
+        <span class="n">k</span> <span class="o">=</span> <span class="mf">405.5</span>  <span class="c1"># constant from paper</span>
+        <span class="n">temp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">k</span> <span class="o">*</span> <span class="n">n_features</span> <span class="o">*</span> <span class="p">(</span><span class="n">t</span> <span class="o">**</span> <span class="n">alpha</span><span class="p">)</span> <span class="o">/</span> <span class="n">delta</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">temp</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">temp</span><span class="p">)</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">dup_bernoulli</span><span class="p">(</span><span class="n">precision</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">level</span><span class="p">:</span> <span class="nb">float</span><span class="p">):</span>
+        <span class="n">lm</span> <span class="o">=</span> <span class="n">precision</span>
+        <span class="n">um</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="nb">min</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">precision</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">level</span> <span class="o">/</span> <span class="mf">2.0</span><span class="p">)),</span> <span class="mi">1</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">25</span><span class="p">):</span>  <span class="c1"># this should somehow converge?</span>
+            <span class="n">qm</span> <span class="o">=</span> <span class="p">(</span><span class="n">um</span> <span class="o">+</span> <span class="n">lm</span><span class="p">)</span> <span class="o">/</span> <span class="mf">2.0</span>
+            <span class="k">if</span> <span class="n">KL_LUCB</span><span class="o">.</span><span class="n">kl_bernoulli</span><span class="p">(</span><span class="n">precision</span><span class="p">,</span> <span class="n">qm</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">level</span><span class="p">:</span>
+                <span class="n">um</span> <span class="o">=</span> <span class="n">qm</span>
+            <span class="c1"># dont know why this should make sense at all?</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">lm</span> <span class="o">=</span> <span class="n">qm</span>
+        <span class="k">return</span> <span class="n">um</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">dlow_bernoulli</span><span class="p">(</span><span class="n">precision</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">level</span><span class="p">:</span> <span class="nb">float</span><span class="p">):</span>
+        <span class="n">um</span> <span class="o">=</span> <span class="n">precision</span>
+        <span class="n">lm</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="nb">min</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">precision</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">level</span> <span class="o">/</span> <span class="mf">2.0</span><span class="p">)),</span> <span class="mi">0</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">25</span><span class="p">):</span>  <span class="c1"># this should somehow converge?</span>
+            <span class="n">qm</span> <span class="o">=</span> <span class="p">(</span><span class="n">um</span> <span class="o">+</span> <span class="n">lm</span><span class="p">)</span> <span class="o">/</span> <span class="mf">2.0</span>
+            <span class="k">if</span> <span class="n">KL_LUCB</span><span class="o">.</span><span class="n">kl_bernoulli</span><span class="p">(</span><span class="n">precision</span><span class="p">,</span> <span class="n">qm</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">level</span><span class="p">:</span>
+                <span class="n">lm</span> <span class="o">=</span> <span class="n">qm</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">um</span> <span class="o">=</span> <span class="n">qm</span>
+        <span class="k">return</span> <span class="n">lm</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">kl_bernoulli</span><span class="p">(</span><span class="n">precision</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">q</span><span class="p">:</span> <span class="nb">float</span><span class="p">):</span>
+        <span class="n">p</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="mf">0.9999999999999999</span><span class="p">,</span> <span class="nb">max</span><span class="p">(</span><span class="mf">0.0000001</span><span class="p">,</span> <span class="n">precision</span><span class="p">))</span>
+        <span class="n">q</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="mf">0.9999999999999999</span><span class="p">,</span> <span class="nb">max</span><span class="p">(</span><span class="mf">0.0000001</span><span class="p">,</span> <span class="n">q</span><span class="p">))</span>
+
+        <span class="k">return</span> <span class="n">p</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">p</span><span class="p">)</span> <span class="o">/</span> <span class="n">q</span><span class="p">)</span> <span class="o">+</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">p</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">p</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">q</span><span class="p">))</span></div>
+</pre></div>
+
+              </div>
+              
+              
+              <!-- Previous / next buttons -->
+<div class='prev-next-area'>
+</div>
+              
+          </main>
+          
+
+      </div>
+    </div>
+  
+  <script src="../../_static/js/index.9ea38e314b9e6d9dab77.js"></script>
+<footer class="footer mt-5 mt-md-0">
+  <div class="container">
+    
+    <div class="footer-item">
+      <p class="copyright">
+    &copy; Copyright Copyright 2022, Kevin Schumann and Paul Heinemeyer.<br>
+</p>
+    </div>
+    
+    <div class="footer-item">
+      <p class="sphinx-version">
+Created using <a href="http://sphinx-doc.org/">Sphinx</a>
+4.5.0. Template is modified version of <a
+href="https://pydata-sphinx-theme.readthedocs.io">PyData Sphinx Theme</a>. <br>
+</p>
+    </div>
+    
+  </div>
+</footer>
+  </body>
+</html>

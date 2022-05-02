@@ -1,0 +1,29 @@
+ianchor.samplers.image
+======================
+
+.. automodule:: ianchor.samplers.image
+
+   
+   
+   
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      ImageSampler
+   
+   
+
+   
+   
+   
+
+
+

@@ -1,0 +1,29 @@
+ianchor.bandit
+==============
+
+.. automodule:: ianchor.bandit
+
+   
+   
+   
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      KL_LUCB
+   
+   
+
+   
+   
+   
+
+
+

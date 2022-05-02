@@ -1,0 +1,42 @@
+﻿ianchor
+=======
+
+.. automodule:: ianchor
+
+   
+   
+   
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      Tasktype
+   
+   
+
+   
+   
+   
+
+
+
+.. rubric:: Modules
+
+.. autosummary::
+   :toctree:
+   :recursive:
+
+   ianchor.anchor
+   ianchor.bandit
+   ianchor.candidate
+   ianchor.samplers
+   ianchor.util
+   ianchor.visualizers
+

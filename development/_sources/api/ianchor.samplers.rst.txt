@@ -1,0 +1,39 @@
+ianchor.samplers
+================
+
+.. automodule:: ianchor.samplers
+
+   
+   
+   
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      Sampler
+   
+   
+
+   
+   
+   
+
+
+
+.. rubric:: Modules
+
+.. autosummary::
+   :toctree:
+   :recursive:
+
+   ianchor.samplers.image
+   ianchor.samplers.tabular
+   ianchor.samplers.text
+

@@ -1,0 +1,29 @@
+ianchor.candidate
+=================
+
+.. automodule:: ianchor.candidate
+
+   
+   
+   
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      AnchorCandidate
+   
+   
+
+   
+   
+   
+
+
+

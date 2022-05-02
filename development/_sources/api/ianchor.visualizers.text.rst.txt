@@ -1,0 +1,29 @@
+ianchor.visualizers.text
+========================
+
+.. automodule:: ianchor.visualizers.text
+
+   
+   
+   
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      TextVisualizer
+   
+   
+
+   
+   
+   
+
+
+

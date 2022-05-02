@@ -1,0 +1,29 @@
+ianchor.samplers.tabular
+========================
+
+.. automodule:: ianchor.samplers.tabular
+
+   
+   
+   
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      TabularSampler
+   
+   
+
+   
+   
+   
+
+
+
