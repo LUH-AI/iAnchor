@@ -1,4 +1,4 @@
-from typing import Any, Callable, Dict
+from typing import Any, Callable, Dict, Type
 
 from ianchor import Tasktype
 
@@ -10,30 +10,46 @@ class Sampler:
     classes for each task.
     """
 
-    subclasses = {}
-
-    def __init_subclass__(cls, **kwargs):
+    @staticmethod
+    def create(type: Tasktype, input: Any, predict_fn: Callable, task_specific: Dict) -> "Sampler":
         """
-        Registers every subclass in the subclass-dict.
-        """
-        super().__init_subclass__(**kwargs)
-        cls.subclasses[cls.type] = cls
+        Creates the sampler for the given task type.
 
-    @classmethod
-    def create(
-        cls, type: Tasktype, input: Any, predict_fn: Callable, task_specific: Dict, **kwargs
-    ):
-        """
-        Creates subclass depending on typ.
+        Parameters
+        ----------
+        type : Tasktype
+            Task type to create the sampler for.
+        input : Any
+            Input data.
+        predict_fn : Callable
+            Prediction function.
+        task_specific : Dict
+            Arguments for the sampler.
 
-        Args:
-            typ: Tasktype
-        Returns:
-            Subclass that is used for the given Tasktype.
-        """
-        if type not in cls.subclasses:
-            raise ValueError("Bad message type {}".format(type))
+        Returns
+        -------
+        Sampler
+            The sampler for the given task type.
 
-        return cls.subclasses[type](
-            input, predict_fn, **task_specific
-        )  # every sampler needs input and predict function
+        Raises
+        ------
+        ValueError
+            If task type was not found.
+        """
+        sampler: Type[Sampler]
+        if type == Tasktype.TABULAR:
+            from ianchor.samplers.tabular import TabularSampler
+
+            sampler = TabularSampler
+        elif type == Tasktype.IMAGE:
+            from ianchor.samplers.image import ImageSampler
+
+            sampler = ImageSampler
+        elif type == Tasktype.TEXT:
+            from ianchor.samplers.text import TextSampler
+
+            sampler = TextSampler
+        else:
+            raise ValueError("Unknown task type.")
+
+        return sampler(input, predict_fn, **task_specific)  # type: ignore

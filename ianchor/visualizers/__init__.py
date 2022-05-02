@@ -1,3 +1,4 @@
+from typing import Type, Any
 from ianchor import Tasktype
 
 
@@ -8,26 +9,40 @@ class Visualizer:
     classes for each task.
     """
 
-    subclasses = {}
-
-    def __init_subclass__(cls, **kwargs):
+    @staticmethod
+    def create(type: Tasktype, *args: Any, **kwargs: Any) -> "Visualizer":
         """
-        Registers every subclass in the subclass-dict.
-        """
-        super().__init_subclass__(**kwargs)
-        cls.subclasses[cls.type] = cls
+        Creates the visualizer for the given task type.
 
-    @classmethod
-    def create(cls, type: Tasktype, **kwargs):
-        """
-        Creates subclass depending on typ.
+        Parameters
+        ----------
+        type : Tasktype
+            Type to create the visualizer for.
 
-        Args:
-            typ: Tasktype
-        Returns:
-            Subclass that is used for the given Tasktype.
-        """
-        if type not in cls.subclasses:
-            raise ValueError("Bad message type {}".format(type))
+        Returns
+        -------
+        Visualizer
+            The visualizer for the given task type.
 
-        return cls.subclasses[type](**kwargs)  # every sampler needs input and predict function
+        Raises
+        ------
+        ValueError
+            If task type was not found.
+        """
+        visualizer: Type[Visualizer]
+        if type == Tasktype.TABULAR:
+            from ianchor.visualizers.tabular import TabularVisualizer
+
+            visualizer = TabularVisualizer
+        elif type == Tasktype.IMAGE:
+            from ianchor.visualizers.image import ImageVisualizer
+
+            visualizer = ImageVisualizer
+        elif type == Tasktype.TEXT:
+            from ianchor.visualizers.text import TextVisualizer
+
+            visualizer = TextVisualizer
+        else:
+            raise ValueError("Unknown task type.")
+
+        return visualizer(*args, **kwargs)

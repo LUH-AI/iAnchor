@@ -8,14 +8,14 @@ import spacy
 from sklearn.feature_extraction.text import CountVectorizer
 
 from ianchor.anchor import Anchor
-from ianchor.sampler import Tasktype
+from ianchor import Tasktype
 
 """
 Test funtions for text data anchor explainations
 """
 
 
-def load_polarity(path="./datasets/rt-polaritydata/"):
+def load_polarity(path="datasets/rt-polaritydata/"):
     """
     Helper function to preprocess polarity dataset
     """
@@ -30,6 +30,7 @@ def load_polarity(path="./datasets/rt-polaritydata/"):
                 continue
             data.append(line.strip())
             labels.append(l)
+            
     return data, labels
 
 

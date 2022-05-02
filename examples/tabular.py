@@ -13,14 +13,17 @@ from ianchor.samplers import Tasktype
 
 
 if __name__ == "__main__":
+    # Get data
     data = np.genfromtxt("datasets/titanic.txt", delimiter=",")
     y_train = data[:, -1]
     X_train = data[:, :-1]
 
+    # Train model
     c = sklearn.ensemble.RandomForestClassifier(n_estimators=100, n_jobs=5, random_state=123)
     c.fit(X_train, y_train)
     print("Train accuracy:", sklearn.metrics.accuracy_score(y_train, c.predict(X_train)))
 
+    # Create explainer
     explainer = Anchor(Tasktype.TABULAR)
     task_paras = {
         "dataset": X_train,
@@ -38,6 +41,8 @@ if __name__ == "__main__":
         ],
     }
     method_paras = {"beam_size": 1, "desired_confidence": 1.0}
+
+    # Explain instance
     anchor = explainer.explain_instance(
         input=X_train[759].reshape(1, -1),
         predict_fn=c.predict,
@@ -47,5 +52,6 @@ if __name__ == "__main__":
         num_coverage_samples=100,
     )
 
-    visu = explainer.visualize(anchor, X_train[759])
-    print(visu)
+    # Visualize explanation
+    v = explainer.visualize(anchor, X_train[759])
+    print(v)
