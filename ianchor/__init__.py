@@ -1,4 +1,5 @@
 import datetime
+from enum import Enum, auto
 
 name = "iAnchor"
 package_name = "ianchor"
@@ -12,3 +13,14 @@ project_urls = {
 }
 copyright = f"Copyright {datetime.date.today().strftime('%Y')}, Kevin Schumann and Paul Heinemeyer"
 version = "0.0.1"
+
+
+class Tasktype(Enum):
+    """
+    Type of data that is going to be explained by the
+    anchor.
+    """
+
+    TABULAR = auto()
+    IMAGE = auto()
+    TEXT = auto()

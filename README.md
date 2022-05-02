@@ -35,6 +35,12 @@ To install the required packages we recommend using [Conda](https://docs.conda.i
    pip install ianchor
    ```
 
+If you want to use iAnchor for images or texts install its dependencies too:
+```sh
+pip install ianchor[text]
+pip install ianchor[image]
+```
+
 ### Tests
 1. Go to the project directory and run
    ```sh

@@ -1,4 +1,4 @@
-from typing import Callable, Tuple
+from typing import Callable, List, Tuple
 
 import logging
 from dataclasses import dataclass, field
@@ -6,7 +6,7 @@ from dataclasses import dataclass, field
 import numpy as np
 
 from ianchor.candidate import AnchorCandidate
-from ianchor.sampler import Sampler
+from ianchor.samplers import Sampler
 
 
 @dataclass(frozen=True)
@@ -26,7 +26,7 @@ class KL_LUCB:
     verbose: bool = False
 
     def get_best_candidates(
-        self, candidates: list[AnchorCandidate], sampler: Sampler, top_n: int = 1,
+        self, candidates: List[AnchorCandidate], sampler: Sampler, top_n: int = 1,
     ):
         """
         Find top-n anchor candidates with highest expected precision.
@@ -64,9 +64,9 @@ class KL_LUCB:
 
     def __update_bounds(
         self,
-        candidates: list[AnchorCandidate],
-        lb: list[float],
-        ub: list[float],
+        candidates: List[AnchorCandidate],
+        lb: List[float],
+        ub: List[float],
         t: int,
         top_n: int,
     ) -> Tuple[int, int, np.ndarray, np.ndarray]:
@@ -74,9 +74,9 @@ class KL_LUCB:
         Update current bounds
 
         Args:
-            candidates (list[AnchorCandidate])
-            lb (list[float])
-            ub: list[float]
+            candidates (List[AnchorCandidate])
+            lb (List[float])
+            ub: List[float]
             t (int)
             top_n (int)
         Returns:

@@ -4,15 +4,16 @@ import pytest
 import torch
 import torchvision.transforms as transforms
 import torchvision.transforms.functional as TF
-from Anchor.anchor import Anchor, Tasktype
-from Anchor.candidate import AnchorCandidate
-from Anchor.sampler import Sampler
-from Anchor.util import pytorch_image_wrapper
 from PIL import Image
 from skimage.data import astronaut
 from skimage.segmentation import mark_boundaries, quickshift
 from skimage.util import img_as_float
 from torchvision.models import resnet18
+
+from ianchor.anchor import Anchor, Tasktype
+from ianchor.candidate import AnchorCandidate
+from ianchor.sampler import Sampler
+from ianchor.util import pytorch_image_wrapper
 
 """
 Test funtions for the image sampler and anchor explainations on images

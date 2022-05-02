@@ -2,8 +2,9 @@ import numpy as np
 import pytest
 import sklearn
 import sklearn.ensemble
-from Anchor.anchor import Anchor
-from Anchor.sampler import Tasktype
+
+from ianchor.anchor import Anchor
+from ianchor.samplers import Tasktype
 
 """
 Test funtions for tabular data anchor explainations

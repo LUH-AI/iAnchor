@@ -8,20 +8,20 @@ An example how to use iAnchor for tabular data.
 import numpy as np
 import sklearn
 import sklearn.ensemble
-from ianchor.anchor import Anchor, Tasktype
+from ianchor.anchor import Anchor
+from ianchor.samplers import Tasktype
 
 
 if __name__ == "__main__":
-    data = np.genfromtxt("../datasets/titanic.txt", delimiter=",")
+    data = np.genfromtxt("datasets/titanic.txt", delimiter=",")
     y_train = data[:, -1]
     X_train = data[:, :-1]
 
     c = sklearn.ensemble.RandomForestClassifier(n_estimators=100, n_jobs=5, random_state=123)
     c.fit(X_train, y_train)
-    print("Train", sklearn.metrics.accuracy_score(y_train, c.predict(X_train)))
+    print("Train accuracy:", sklearn.metrics.accuracy_score(y_train, c.predict(X_train)))
 
     explainer = Anchor(Tasktype.TABULAR)
-
     task_paras = {
         "dataset": X_train,
         "column_names": [
@@ -46,6 +46,8 @@ if __name__ == "__main__":
         method_specific=method_paras,
         num_coverage_samples=100,
     )
+
+    exit()
 
     visu = explainer.visualize(anchor, X_train[759])
     print(visu)

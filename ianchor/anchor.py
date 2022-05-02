@@ -1,9 +1,9 @@
 import logging
 
-from ianchor.visualizer import Visualizer
+from ianchor.visualizers import Visualizer
 
 logging.basicConfig(level=logging.INFO)
-from typing import Callable, Optional, Protocol, Tuple, Union
+from typing import Any, Callable, List, Optional, Protocol, Tuple, Union
 
 from dataclasses import dataclass, field
 from enum import Enum, auto
@@ -17,8 +17,7 @@ from smac.scenario.scenario import Scenario
 
 from ianchor.bandit import KL_LUCB
 from ianchor.candidate import AnchorCandidate
-from ianchor.sampler import Sampler, Tasktype
-from ianchor.visualizer import Visualizer
+from ianchor.samplers import Sampler, Tasktype
 
 
 @dataclass()
@@ -42,8 +41,8 @@ class Anchor:
 
     def explain_instance(
         self,
-        input: any,
-        predict_fn: Callable[[any], np.array],
+        input: Any,
+        predict_fn: Callable[[Any], np.array],
         method: str = "greedy",
         task_specific: dict = None,
         method_specific: dict = None,
@@ -127,20 +126,20 @@ class Anchor:
         return Visualizer.create(self.tasktype).visualize(anchor, instance, features)
 
     def generate_candidates(
-        self, prev_anchors: list[AnchorCandidate], coverage_min: float
-    ) -> list[AnchorCandidate]:
+        self, prev_anchors: List[AnchorCandidate], coverage_min: float
+    ) -> List[AnchorCandidate]:
         """
         Generates new anchor candidates by adding a new unseen feature
         to each previous anchor feature mask.
 
         Args:
-            prev_anchors (list[AnchorCandidate]): previous anchors.
+            prev_anchors (List[AnchorCandidate]): previous anchors.
             coverage_min (float): min_coverage an anchor must have.
 
         Returns:
-            list[AnchorCandidate]: new anchor candidates
+            List[AnchorCandidate]: new anchor candidates
         """
-        new_candidates: list[AnchorCandidate] = []
+        new_candidates: List[AnchorCandidate] = []
         # iterate over possible features or predicates
         for feature in range(self.sampler.num_features):
             # check if we have no prev anchors and create a complete new set

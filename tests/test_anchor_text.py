@@ -5,9 +5,10 @@ import pytest
 import sklearn
 import sklearn.ensemble
 import spacy
-from Anchor.anchor import Anchor
-from Anchor.sampler import Tasktype
 from sklearn.feature_extraction.text import CountVectorizer
+
+from ianchor.anchor import Anchor
+from ianchor.sampler import Tasktype
 
 """
 Test funtions for text data anchor explainations
