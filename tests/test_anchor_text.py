@@ -6,7 +6,6 @@ import sklearn
 import sklearn.ensemble
 import spacy
 from sklearn.feature_extraction.text import CountVectorizer
-
 from ianchor.anchor import Anchor
 from ianchor import Tasktype
 

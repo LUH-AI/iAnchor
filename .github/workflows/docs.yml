@@ -33,7 +33,7 @@ jobs:
 
     - name: Install dependencies
       run: |
-        pip install ".[dev]"
+        pip install ".[dev,image,text]"
 
     - name: Make docs
       run: |

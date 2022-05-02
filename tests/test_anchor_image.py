@@ -12,7 +12,7 @@ from torchvision.models import resnet18
 
 from ianchor.anchor import Anchor, Tasktype
 from ianchor.candidate import AnchorCandidate
-from ianchor.sampler import Sampler
+from ianchor.samplers import Sampler
 from ianchor.util import pytorch_image_wrapper
 
 """

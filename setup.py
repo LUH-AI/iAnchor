@@ -51,15 +51,8 @@ extras_require = {
         "flake8",
         "pre-commit",
     ],
-    "image": [
-        "pytorch",
-        "scikit-image",
-        "torchvision",
-        "spacy",
-        "tensorflow",
-        "transformers",
-    ],
-    "text": ["spacy"],
+    "image": ["scikit-image", "torch", "torchvision", "spacy", "transformers"],
+    "text": ["spacy", "transformers"],
 }
 
 setuptools.setup(
