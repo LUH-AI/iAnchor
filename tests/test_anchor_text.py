@@ -29,7 +29,7 @@ def load_polarity(path="datasets/rt-polaritydata/"):
                 continue
             data.append(line.strip())
             labels.append(l)
-            
+
     return data, labels
 
 
@@ -38,6 +38,7 @@ def setup():
     """
     For text tests we use cornell polarity data and a simple sample sentence
     """
+    spacy.cli.download("en_core_web_sm")  # Otherwise spacy can not load it
     nlp = spacy.load("en_core_web_sm")
     text_to_be_explained = "This is a good book ."
     preprocessed_text = [word.text for word in nlp(text_to_be_explained)]
