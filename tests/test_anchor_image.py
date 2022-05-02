@@ -43,7 +43,7 @@ def setup():
     def predict(x):
         return model(x)
 
-    pytest.predict_fn = predict
+    pytest.predict_fn = predict 
     pytest.device = device
     pytest.input = input
 
