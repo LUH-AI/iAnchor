@@ -22,30 +22,21 @@ To install the required packages we recommend using [Conda](https://docs.conda.i
 
 ### Installation
 
-1. Install conda environment
-   ```sh
-   conda create -n iAnchor python=3.9
-   ```
-2. Activate the environment
-   ```sh
-   conda activate iAnchor
-   ```
-3. Install from pypi
-   ```sh
-   pip install ianchor
-   ```
+```sh
+conda create -n iAnchor python=3.9
+conda activate iAnchor
+pip install ianchor
+```
 
 If you want to use iAnchor for images or texts install its dependencies too:
 ```sh
-pip install ianchor[text]
-pip install ianchor[image]
+pip install ianchor[adv]
 ```
 
-### Tests
-1. Go to the project directory and run
-   ```sh
-   pytest tests/*
-   ```
+If you wish to contribute to this repo install the developer tools:
+```sh
+pip install ianchor[dev]
+```
 
 <!-- USAGE EXAMPLES -->
 ## Usage
