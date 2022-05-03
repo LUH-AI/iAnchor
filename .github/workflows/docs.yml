@@ -1,3 +1,6 @@
+permissions:
+  contents: write
+
 name: docs
 
 on:
@@ -33,7 +36,7 @@ jobs:
 
     - name: Install dependencies
       run: |
-        pip install ".[dev]"
+        pip install ".[dev,adv]"
 
     - name: Make docs
       run: |

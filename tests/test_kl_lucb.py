@@ -1,4 +1,4 @@
-from Anchor.bandit import KL_LUCB
+from ianchor.bandit import KL_LUCB
 
 
 def test_dup_bernoulli():

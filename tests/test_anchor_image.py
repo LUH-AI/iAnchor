@@ -1,18 +1,12 @@
-import matplotlib.pyplot as plt
-import numpy as np
 import pytest
 import torch
 import torchvision.transforms as transforms
-import torchvision.transforms.functional as TF
 from PIL import Image
-from skimage.data import astronaut
-from skimage.segmentation import mark_boundaries, quickshift
-from skimage.util import img_as_float
 from torchvision.models import resnet18
 
 from ianchor.anchor import Anchor, Tasktype
 from ianchor.candidate import AnchorCandidate
-from ianchor.sampler import Sampler
+from ianchor.samplers import Sampler
 from ianchor.util import pytorch_image_wrapper
 
 """
@@ -36,7 +30,7 @@ def setup():
         ]
     )
 
-    image = Image.open("./static/dog_paper.jpeg")
+    image = Image.open("./static/dog.jpeg")
     input = preprocess(image).unsqueeze(0)
 
     @pytorch_image_wrapper(device)
@@ -72,9 +66,10 @@ def test_image_greedy_search():
         method="greedy",
         method_specific=method_paras,
         num_coverage_samples=1000,
+        seed=0,
     )
 
-    assert anchor.feature_mask == [19]
+    assert anchor.feature_mask == [11]
     assert anchor.precision >= 0.8
 
 
@@ -88,7 +83,8 @@ def test_image_beam_search():
         method="beam",
         method_specific=method_paras,
         num_coverage_samples=1000,
+        seed=0,
     )
 
-    assert anchor.feature_mask == [11, 4]
+    assert anchor.feature_mask == [11, 6]
     assert anchor.precision >= 0.8

@@ -51,15 +51,7 @@ extras_require = {
         "flake8",
         "pre-commit",
     ],
-    "image": [
-        "pytorch",
-        "scikit-image",
-        "torchvision",
-        "spacy",
-        "tensorflow",
-        "transformers",
-    ],
-    "text": ["spacy"],
+    "adv": ["scikit-image", "torch", "torchvision", "spacy", "transformers"],
 }
 
 setuptools.setup(
@@ -75,7 +67,15 @@ setuptools.setup(
     version=version,
     packages=setuptools.find_packages(exclude=["tests"]),
     python_requires=">=3.8",
-    install_requires=read_file(os.path.join(HERE, "requirements.txt")).split("\n"),
+    install_requires=[
+        "numpy",
+        "pandas",
+        "ConfigSpace",
+        "lime",
+        "plotly",
+        "nbformat",
+        "smac",
+    ],
     extras_require=extras_require,
     test_suite="pytest",
     platforms=["Linux"],
