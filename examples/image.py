@@ -1,3 +1,10 @@
+"""
+Image Explanation
+-----------------
+
+An example how to use iAnchor for image data.
+"""
+
 import torch
 import torchvision.transforms as transforms
 from ianchor import Tasktype
