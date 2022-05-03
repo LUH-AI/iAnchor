@@ -15,7 +15,6 @@ ianchor.util
    
       pytorch_image_wrapper
       pytorch_wrapper
-      tf_wrapper
    
    
 

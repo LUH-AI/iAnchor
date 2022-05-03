@@ -30,6 +30,48 @@ Examples
    :hidden:
 
    /examples/tabular
+
+.. raw:: html
+
+    <div class="sphx-glr-thumbcontainer" tooltip="An example how to use iAnchor for image data.">
+
+.. only:: html
+
+ .. figure:: /examples/images/thumb/sphx_glr_image_thumb.png
+     :alt: Image Explanation
+
+     :ref:`sphx_glr_examples_image.py`
+
+.. raw:: html
+
+    </div>
+
+
+.. toctree::
+   :hidden:
+
+   /examples/image
+
+.. raw:: html
+
+    <div class="sphx-glr-thumbcontainer" tooltip="An example how to use iAnchor for text data.">
+
+.. only:: html
+
+ .. figure:: /examples/images/thumb/sphx_glr_text_thumb.png
+     :alt: Text Explanation
+
+     :ref:`sphx_glr_examples_text.py`
+
+.. raw:: html
+
+    </div>
+
+
+.. toctree::
+   :hidden:
+
+   /examples/text
 .. raw:: html
 
     <div class="sphx-glr-clear"></div>

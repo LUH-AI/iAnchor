@@ -134,6 +134,16 @@ style="width: 100%;">
      Tabular Explanation
     </a>
    </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="../../examples/image.html">
+     Image Explanation
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="../../examples/text.html">
+     Text Explanation
+    </a>
+   </li>
   </ul>
  </li>
  <li class="toctree-l1 has-children">
@@ -218,33 +228,17 @@ style="width: 100%;">
 <span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 
 
-<div class="viewcode-block" id="tf_wrapper"><a class="viewcode-back" href="../../api/ianchor.util.html#ianchor.util.tf_wrapper">[docs]</a><span class="k">def</span> <span class="nf">tf_wrapper</span><span class="p">(</span><span class="n">func</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Should not be used in current state, since not tested</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="kn">import</span> <span class="nn">tensorflow</span> <span class="k">as</span> <span class="nn">tf</span>
-
-    <span class="k">def</span> <span class="nf">wrapper</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-        <span class="n">x</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">convert_to_tensor</span><span class="p">(</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
-        <span class="n">y_proba</span> <span class="o">=</span> <span class="n">func</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span>
-        <span class="n">func</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
-
-        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">y_proba</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
-
-    <span class="k">return</span> <span class="n">wrapper</span></div>
-
-
 <div class="viewcode-block" id="pytorch_wrapper"><a class="viewcode-back" href="../../api/ianchor.util.html#ianchor.util.pytorch_wrapper">[docs]</a><span class="k">def</span> <span class="nf">pytorch_wrapper</span><span class="p">(</span><span class="n">device</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Decorator that converts anchor image samples</span>
 <span class="sd">    (np.ndarray) to a Tensor and extracts the labels</span>
 <span class="sd">    (with argmax)</span>
 
-<span class="sd">    Use case: </span>
+<span class="sd">    Use case:</span>
 <span class="sd">        Adapter from Anchor Lib  -&gt; predict_fn -&gt; Anchor Lib</span>
 
 <span class="sd">    Args:</span>
-<span class="sd">        device ([type], optional): Pytorch device the model runs on. </span>
+<span class="sd">        device ([type], optional): Pytorch device the model runs on.</span>
 <span class="sd">                                    Defaults to torch.device(&quot;cpu&quot;).</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
@@ -272,11 +266,11 @@ style="width: 100%;">
 <span class="sd">    (with argmax). Permuted the images to AxHxW before</span>
 <span class="sd">    passing it to the wrapped method.</span>
 
-<span class="sd">    Use case: </span>
+<span class="sd">    Use case:</span>
 <span class="sd">        Adapter from Anchor Lib  -&gt; predict_fn -&gt; Anchor Lib</span>
 
 <span class="sd">    Args:</span>
-<span class="sd">        device ([type], optional): Pytorch device the model runs on. </span>
+<span class="sd">        device ([type], optional): Pytorch device the model runs on.</span>
 <span class="sd">                                    Defaults to torch.device(&quot;cpu&quot;).</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="kn">import</span> <span class="nn">torch</span>

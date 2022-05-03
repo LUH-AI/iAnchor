@@ -5,7 +5,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Tabular Explanation &#8212; iAnchor Documentation 0.0.1 documentation</title>
+    <title>Image Explanation &#8212; iAnchor Documentation 0.0.1 documentation</title>
     
   <link href="../_static/css/theme.css" rel="stylesheet">
   <link href="../_static/css/index.ac9c05f7c49ca1e1f876c6e36360ea26.css" rel="stylesheet">
@@ -37,8 +37,8 @@
     <script src="../_static/doctools.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="Image Explanation" href="image.html" />
-    <link rel="prev" title="Examples" href="index.html" />
+    <link rel="next" title="Text Explanation" href="text.html" />
+    <link rel="prev" title="Tabular Explanation" href="tabular.html" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="docsearch:language" content="None">
     
@@ -131,13 +131,13 @@ style="width: 100%;">
    </i>
   </label>
   <ul class="current">
-   <li class="toctree-l2 current active">
-    <a class="current reference internal" href="#">
+   <li class="toctree-l2">
+    <a class="reference internal" href="tabular.html">
      Tabular Explanation
     </a>
    </li>
-   <li class="toctree-l2">
-    <a class="reference internal" href="image.html">
+   <li class="toctree-l2 current active">
+    <a class="current reference internal" href="#">
      Image Explanation
     </a>
    </li>
@@ -242,71 +242,75 @@ style="width: 100%;">
                 
   <div class="sphx-glr-download-link-note admonition note">
 <p class="admonition-title">Note</p>
-<p>Click <a class="reference internal" href="#sphx-glr-download-examples-tabular-py"><span class="std std-ref">here</span></a>
+<p>Click <a class="reference internal" href="#sphx-glr-download-examples-image-py"><span class="std std-ref">here</span></a>
 to download the full example code</p>
 </div>
-<div class="sphx-glr-example-title section" id="tabular-explanation">
-<span id="sphx-glr-examples-tabular-py"></span><h1>Tabular Explanation<a class="headerlink" href="#tabular-explanation" title="Permalink to this headline">¶</a></h1>
-<p>An example how to use iAnchor for tabular data.</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="kn">import</span> <span class="nn">sklearn</span>
-<span class="kn">import</span> <span class="nn">sklearn.ensemble</span>
+<div class="sphx-glr-example-title section" id="image-explanation">
+<span id="sphx-glr-examples-image-py"></span><h1>Image Explanation<a class="headerlink" href="#image-explanation" title="Permalink to this headline">¶</a></h1>
+<p>An example how to use iAnchor for image data.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">torch</span>
+<span class="kn">import</span> <span class="nn">torchvision.transforms</span> <span class="k">as</span> <span class="nn">transforms</span>
+<span class="kn">from</span> <span class="nn">ianchor</span> <span class="kn">import</span> <span class="n">Tasktype</span>
 <span class="kn">from</span> <span class="nn">ianchor.anchor</span> <span class="kn">import</span> <span class="n">Anchor</span>
-<span class="kn">from</span> <span class="nn">ianchor.samplers</span> <span class="kn">import</span> <span class="n">Tasktype</span>
+<span class="kn">from</span> <span class="nn">ianchor.util</span> <span class="kn">import</span> <span class="n">pytorch_image_wrapper</span>
+<span class="kn">from</span> <span class="nn">torchvision.models</span> <span class="kn">import</span> <span class="n">inception_v3</span>
+<span class="kn">from</span> <span class="nn">PIL</span> <span class="kn">import</span> <span class="n">Image</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
 
 
 <span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
-    <span class="c1"># Get data</span>
-    <span class="n">data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">genfromtxt</span><span class="p">(</span><span class="s2">&quot;datasets/titanic.txt&quot;</span><span class="p">,</span> <span class="n">delimiter</span><span class="o">=</span><span class="s2">&quot;,&quot;</span><span class="p">)</span>
-    <span class="n">y_train</span> <span class="o">=</span> <span class="n">data</span><span class="p">[:,</span> <span class="o">-</span><span class="mi">1</span><span class="p">]</span>
-    <span class="n">X_train</span> <span class="o">=</span> <span class="n">data</span><span class="p">[:,</span> <span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
 
-    <span class="c1"># Train model</span>
-    <span class="n">c</span> <span class="o">=</span> <span class="n">sklearn</span><span class="o">.</span><span class="n">ensemble</span><span class="o">.</span><span class="n">RandomForestClassifier</span><span class="p">(</span><span class="n">n_estimators</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">n_jobs</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="mi">123</span><span class="p">)</span>
-    <span class="n">c</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_train</span><span class="p">,</span> <span class="n">y_train</span><span class="p">)</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Train accuracy:&quot;</span><span class="p">,</span> <span class="n">sklearn</span><span class="o">.</span><span class="n">metrics</span><span class="o">.</span><span class="n">accuracy_score</span><span class="p">(</span><span class="n">y_train</span><span class="p">,</span> <span class="n">c</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X_train</span><span class="p">)))</span>
-
-    <span class="c1"># Create explainer</span>
-    <span class="n">explainer</span> <span class="o">=</span> <span class="n">Anchor</span><span class="p">(</span><span class="n">Tasktype</span><span class="o">.</span><span class="n">TABULAR</span><span class="p">)</span>
-    <span class="n">task_paras</span> <span class="o">=</span> <span class="p">{</span>
-        <span class="s2">&quot;dataset&quot;</span><span class="p">:</span> <span class="n">X_train</span><span class="p">,</span>
-        <span class="s2">&quot;column_names&quot;</span><span class="p">:</span> <span class="p">[</span>
-            <span class="s2">&quot;PcClass&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;Name&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;Sex&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;Age&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;SibSp&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;Parch&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;Ticket&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;Fare&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;Cabin&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;Embarked&quot;</span><span class="p">,</span>
-        <span class="p">],</span>
-    <span class="p">}</span>
-    <span class="n">method_paras</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;beam_size&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;desired_confidence&quot;</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">}</span>
-
-    <span class="c1"># Explain instance</span>
-    <span class="n">anchor</span> <span class="o">=</span> <span class="n">explainer</span><span class="o">.</span><span class="n">explain_instance</span><span class="p">(</span>
-        <span class="nb">input</span><span class="o">=</span><span class="n">X_train</span><span class="p">[</span><span class="mi">759</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">),</span>
-        <span class="n">predict_fn</span><span class="o">=</span><span class="n">c</span><span class="o">.</span><span class="n">predict</span><span class="p">,</span>
-        <span class="n">method</span><span class="o">=</span><span class="s2">&quot;beam&quot;</span><span class="p">,</span>
-        <span class="n">task_specific</span><span class="o">=</span><span class="n">task_paras</span><span class="p">,</span>
-        <span class="n">method_specific</span><span class="o">=</span><span class="n">method_paras</span><span class="p">,</span>
-        <span class="n">num_coverage_samples</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>
+    <span class="c1"># model: c, h, w</span>
+    <span class="c1"># numpy, sklearn matplotlib: w, h, c</span>
+    <span class="n">preprocess</span> <span class="o">=</span> <span class="n">transforms</span><span class="o">.</span><span class="n">Compose</span><span class="p">(</span>
+        <span class="p">[</span>
+            <span class="n">transforms</span><span class="o">.</span><span class="n">Resize</span><span class="p">(</span><span class="mi">299</span><span class="p">),</span>
+            <span class="n">transforms</span><span class="o">.</span><span class="n">CenterCrop</span><span class="p">(</span><span class="mi">299</span><span class="p">),</span>
+            <span class="n">transforms</span><span class="o">.</span><span class="n">ToTensor</span><span class="p">(),</span>
+            <span class="n">transforms</span><span class="o">.</span><span class="n">Normalize</span><span class="p">(</span><span class="n">mean</span><span class="o">=</span><span class="p">[</span><span class="mf">0.485</span><span class="p">,</span> <span class="mf">0.456</span><span class="p">,</span> <span class="mf">0.406</span><span class="p">],</span> <span class="n">std</span><span class="o">=</span><span class="p">[</span><span class="mf">0.229</span><span class="p">,</span> <span class="mf">0.224</span><span class="p">,</span> <span class="mf">0.225</span><span class="p">]),</span>
+        <span class="p">]</span>
     <span class="p">)</span>
 
-    <span class="c1"># Visualize explanation</span>
-    <span class="n">v</span> <span class="o">=</span> <span class="n">explainer</span><span class="o">.</span><span class="n">visualize</span><span class="p">(</span><span class="n">anchor</span><span class="p">,</span> <span class="n">X_train</span><span class="p">[</span><span class="mi">759</span><span class="p">])</span>
-    <span class="nb">print</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+    <span class="n">image</span> <span class="o">=</span> <span class="n">Image</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s2">&quot;static/dog.jpeg&quot;</span><span class="p">)</span>
+    <span class="nb">input</span> <span class="o">=</span> <span class="n">preprocess</span><span class="p">(</span><span class="n">image</span><span class="p">)</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>  <span class="c1"># b, c, h, w</span>
+
+    <span class="c1"># Get the model</span>
+    <span class="n">model</span> <span class="o">=</span> <span class="n">inception_v3</span><span class="p">(</span><span class="n">pretrained</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">eval</span><span class="p">()</span>
+
+    <span class="c1"># Move to device</span>
+    <span class="n">device</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">device</span><span class="p">(</span><span class="s2">&quot;cuda&quot;</span> <span class="k">if</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">is_available</span><span class="p">()</span> <span class="k">else</span> <span class="s2">&quot;cpu&quot;</span><span class="p">)</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
+
+    <span class="c1"># Prepare predict function</span>
+    <span class="nd">@pytorch_image_wrapper</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">predict</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">model</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+
+    <span class="c1"># Get our explainer</span>
+    <span class="n">explainer</span> <span class="o">=</span> <span class="n">Anchor</span><span class="p">(</span><span class="n">Tasktype</span><span class="o">.</span><span class="n">IMAGE</span><span class="p">)</span>
+
+    <span class="c1"># And explain instance</span>
+    <span class="n">method_paras</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;beam_size&quot;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span> <span class="s2">&quot;desired_confidence&quot;</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">}</span>
+    <span class="n">anchor</span> <span class="o">=</span> <span class="n">explainer</span><span class="o">.</span><span class="n">explain_instance</span><span class="p">(</span>
+        <span class="nb">input</span><span class="o">.</span><span class="n">squeeze</span><span class="p">()</span><span class="o">.</span><span class="n">permute</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span>
+        <span class="n">predict_fn</span><span class="o">=</span><span class="n">predict</span><span class="p">,</span>
+        <span class="n">method</span><span class="o">=</span><span class="s2">&quot;beam&quot;</span><span class="p">,</span>
+        <span class="n">method_specific</span><span class="o">=</span><span class="n">method_paras</span><span class="p">,</span>
+        <span class="n">num_coverage_samples</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">visu</span> <span class="o">=</span> <span class="n">explainer</span><span class="o">.</span><span class="n">visualize</span><span class="p">(</span><span class="n">anchor</span><span class="p">,</span> <span class="nb">input</span><span class="o">.</span><span class="n">squeeze</span><span class="p">()</span><span class="o">.</span><span class="n">permute</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">visu</span><span class="p">)</span>
 </pre></div>
 </div>
 <p class="sphx-glr-timing"><strong>Total running time of the script:</strong> ( 0 minutes  0.000 seconds)</p>
-<div class="sphx-glr-footer class sphx-glr-footer-example docutils container" id="sphx-glr-download-examples-tabular-py">
+<div class="sphx-glr-footer class sphx-glr-footer-example docutils container" id="sphx-glr-download-examples-image-py">
 <div class="sphx-glr-download sphx-glr-download-python docutils container">
-<p><a class="reference download internal" download="" href="../_downloads/86bbed451fc28490ad8e9f546ffbcce5/tabular.py"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Python</span> <span class="pre">source</span> <span class="pre">code:</span> <span class="pre">tabular.py</span></code></a></p>
+<p><a class="reference download internal" download="" href="../_downloads/49ceeed44f567f04ed86d0c3362de008/image.py"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Python</span> <span class="pre">source</span> <span class="pre">code:</span> <span class="pre">image.py</span></code></a></p>
 </div>
 <div class="sphx-glr-download sphx-glr-download-jupyter docutils container">
-<p><a class="reference download internal" download="" href="../_downloads/91579deb3fcc6fd910eea69877284726/tabular.ipynb"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Jupyter</span> <span class="pre">notebook:</span> <span class="pre">tabular.ipynb</span></code></a></p>
+<p><a class="reference download internal" download="" href="../_downloads/f4109e6344bc5c0e47ddf93dcd20b86d/image.ipynb"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Jupyter</span> <span class="pre">notebook:</span> <span class="pre">image.ipynb</span></code></a></p>
 </div>
 </div>
 <p class="sphx-glr-signature"><a class="reference external" href="https://sphinx-gallery.github.io">Gallery generated by Sphinx-Gallery</a></p>
@@ -318,17 +322,17 @@ to download the full example code</p>
               
               <!-- Previous / next buttons -->
 <div class='prev-next-area'> 
-    <a class='left-prev' id="prev-link" href="index.html" title="previous page">
+    <a class='left-prev' id="prev-link" href="tabular.html" title="previous page">
         <i class="fas fa-angle-left"></i>
         <div class="prev-next-info">
             <p class="prev-next-subtitle">previous</p>
-            <p class="prev-next-title">Examples</p>
+            <p class="prev-next-title">Tabular Explanation</p>
         </div>
     </a>
-    <a class='right-next' id="next-link" href="image.html" title="next page">
+    <a class='right-next' id="next-link" href="text.html" title="next page">
     <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">Image Explanation</p>
+        <p class="prev-next-title">Text Explanation</p>
     </div>
     <i class="fas fa-angle-right"></i>
     </a>
